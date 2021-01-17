@@ -1,0 +1,1765 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>STAT 391: Applied Causal Inference</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Anthony Scotina" />
+    <script src="libs/header-attrs-2.3/header-attrs.js"></script>
+    <link rel="stylesheet" href="my-theme.css" type="text/css" />
+    <link rel="stylesheet" href="my-fonts.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# STAT 391: Applied Causal Inference
+## Introduction to Causal Inference
+### Anthony Scotina
+
+---
+
+
+
+
+
+
+&lt;!--
+pagedown::chrome_print("~/Dropbox/Teaching/03-Simmons Courses/MATH228-Introduction to Data Science/Lecture Slides/01-Introduction/01-Introduction.html")
+--&gt;
+
+class: center, middle, frame
+
+# The Causal Revolution
+
+---
+
+# What is causal inference?
+
+--
+
+**Infer**ring **causal** effects of any *treatment*/*policy*/*intervention* (etc.)
+
+--
+
+.center[
+&lt;img src="01-Introduction_files/figure-html/unnamed-chunk-2-1.png" width="100%" /&gt;
+]
+
+--
+
+- **Effect** of metformin + sulfonylurea on CVD symptoms in T2D patients
+- **Effect** of climate change policies on emissions
+- **Effect** of coffee on cancer risk
+
+---
+
+# Simpson's Paradox
+
+New disease: **Piéchart Disease**&lt;sup&gt;[*]&lt;/sup&gt; 😨😱😨😱😨😱
+
+- **Treatment**, *T*: A (0) or B (1)
+
+- **Condition**, *C*: *mild* (0) or *severe* (1)
+
+- **Outcome**, *Y*: *no* (0) or *yes* (1)
+
+.footnote[
+[*] the "t" is silent
+]
+
+---
+
+# Piéchart Disease Outcome Table
+
+.pull-left[
+<style>html {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif;
+}
+
+#rofetlebom .gt_table {
+  display: table;
+  border-collapse: collapse;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333333;
+  font-size: 16px;
+  font-weight: normal;
+  font-style: normal;
+  background-color: #FFFFFF;
+  width: auto;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
+
+#rofetlebom .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#rofetlebom .gt_title {
+  color: #333333;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
+
+#rofetlebom .gt_subtitle {
+  color: #333333;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 0;
+  padding-bottom: 4px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
+
+#rofetlebom .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#rofetlebom .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#rofetlebom .gt_col_heading {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#rofetlebom .gt_column_spanner_outer {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#rofetlebom .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#rofetlebom .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#rofetlebom .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#rofetlebom .gt_group_heading {
+  padding: 8px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#rofetlebom .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#rofetlebom .gt_from_md > :first-child {
+  margin-top: 0;
+}
+
+#rofetlebom .gt_from_md > :last-child {
+  margin-bottom: 0;
+}
+
+#rofetlebom .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#rofetlebom .gt_stub {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 12px;
+}
+
+#rofetlebom .gt_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#rofetlebom .gt_first_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+}
+
+#rofetlebom .gt_grand_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#rofetlebom .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#rofetlebom .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#rofetlebom .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#rofetlebom .gt_footnotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#rofetlebom .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding: 4px;
+}
+
+#rofetlebom .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#rofetlebom .gt_sourcenote {
+  font-size: 90%;
+  padding: 4px;
+}
+
+#rofetlebom .gt_left {
+  text-align: left;
+}
+
+#rofetlebom .gt_center {
+  text-align: center;
+}
+
+#rofetlebom .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#rofetlebom .gt_font_normal {
+  font-weight: normal;
+}
+
+#rofetlebom .gt_font_bold {
+  font-weight: bold;
+}
+
+#rofetlebom .gt_font_italic {
+  font-style: italic;
+}
+
+#rofetlebom .gt_super {
+  font-size: 65%;
+}
+
+#rofetlebom .gt_footnote_marks {
+  font-style: italic;
+  font-size: 65%;
+}
+</style>
+<div id="rofetlebom" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;"><table class="gt_table">
+  
+  <thead class="gt_col_headings">
+    <tr>
+      <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1">Treatment</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1">Total</th>
+    </tr>
+  </thead>
+  <tbody class="gt_table_body">
+    <tr>
+      <td class="gt_row gt_left" style="background-color: #FFFFFF; color: #000000;">A</td>
+      <td class="gt_row gt_left" style="background-color: #FFFFFF; color: #000000;">15% (150/1000)</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left" style="background-color: #FFFFFF; color: #000000;">B</td>
+      <td class="gt_row gt_left" style="background-color: #FFFFFF; color: #000000;">20% (100/500)</td>
+    </tr>
+  </tbody>
+  
+  
+</table></div>
+]
+
+.pull-right[
+# .display[Which treatment should you choose?]
+]
+
+--
+
+.center[
+&lt;img src="01-Introduction_files/figure-html/unnamed-chunk-4-1.png" width="100%" /&gt;
+]
+
+---
+
+# Piéchart Disease Outcome Table
+
+.pull-left[
+<style>html {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif;
+}
+
+#rofetlebom .gt_table {
+  display: table;
+  border-collapse: collapse;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333333;
+  font-size: 16px;
+  font-weight: normal;
+  font-style: normal;
+  background-color: #FFFFFF;
+  width: auto;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
+
+#rofetlebom .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#rofetlebom .gt_title {
+  color: #333333;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
+
+#rofetlebom .gt_subtitle {
+  color: #333333;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 0;
+  padding-bottom: 4px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
+
+#rofetlebom .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#rofetlebom .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#rofetlebom .gt_col_heading {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#rofetlebom .gt_column_spanner_outer {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#rofetlebom .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#rofetlebom .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#rofetlebom .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#rofetlebom .gt_group_heading {
+  padding: 8px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#rofetlebom .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#rofetlebom .gt_from_md > :first-child {
+  margin-top: 0;
+}
+
+#rofetlebom .gt_from_md > :last-child {
+  margin-bottom: 0;
+}
+
+#rofetlebom .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#rofetlebom .gt_stub {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 12px;
+}
+
+#rofetlebom .gt_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#rofetlebom .gt_first_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+}
+
+#rofetlebom .gt_grand_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#rofetlebom .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#rofetlebom .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#rofetlebom .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#rofetlebom .gt_footnotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#rofetlebom .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding: 4px;
+}
+
+#rofetlebom .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#rofetlebom .gt_sourcenote {
+  font-size: 90%;
+  padding: 4px;
+}
+
+#rofetlebom .gt_left {
+  text-align: left;
+}
+
+#rofetlebom .gt_center {
+  text-align: center;
+}
+
+#rofetlebom .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#rofetlebom .gt_font_normal {
+  font-weight: normal;
+}
+
+#rofetlebom .gt_font_bold {
+  font-weight: bold;
+}
+
+#rofetlebom .gt_font_italic {
+  font-style: italic;
+}
+
+#rofetlebom .gt_super {
+  font-size: 65%;
+}
+
+#rofetlebom .gt_footnote_marks {
+  font-style: italic;
+  font-size: 65%;
+}
+</style>
+<div id="rofetlebom" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;"><table class="gt_table">
+  
+  <thead class="gt_col_headings">
+    <tr>
+      <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1">T</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1">Mild</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1">Severe</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1">Total</th>
+    </tr>
+  </thead>
+  <tbody class="gt_table_body">
+    <tr>
+      <td class="gt_row gt_left" style="background-color: #FFFFFF; color: #000000;">A</td>
+      <td class="gt_row gt_left" style="background-color: #FFFFFF; color: #000000;">12% (108/900)</td>
+      <td class="gt_row gt_left" style="background-color: #FFFFFF; color: #000000;">42% (42/100)</td>
+      <td class="gt_row gt_left" style="background-color: #FFFFFF; color: #000000;">15% (150/1000)</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left" style="background-color: #FFFFFF; color: #000000;">B</td>
+      <td class="gt_row gt_left" style="background-color: #FFFFFF; color: #000000;">10% (5/50)</td>
+      <td class="gt_row gt_left" style="background-color: #FFFFFF; color: #000000;">21% (95/450)</td>
+      <td class="gt_row gt_left" style="background-color: #FFFFFF; color: #000000;">20% (100/500)</td>
+    </tr>
+  </tbody>
+  
+  
+</table></div>
+]
+
+.pull-right[
+# .display[Which treatment should you choose?]
+]
+
+---
+
+# Piéchart Disease Outcome Table
+
+.pull-left[
+<style>html {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif;
+}
+
+#atyhrblykz .gt_table {
+  display: table;
+  border-collapse: collapse;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333333;
+  font-size: 16px;
+  font-weight: normal;
+  font-style: normal;
+  background-color: #FFFFFF;
+  width: auto;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
+
+#atyhrblykz .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#atyhrblykz .gt_title {
+  color: #333333;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
+
+#atyhrblykz .gt_subtitle {
+  color: #333333;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 0;
+  padding-bottom: 4px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
+
+#atyhrblykz .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#atyhrblykz .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#atyhrblykz .gt_col_heading {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#atyhrblykz .gt_column_spanner_outer {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#atyhrblykz .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#atyhrblykz .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#atyhrblykz .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#atyhrblykz .gt_group_heading {
+  padding: 8px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#atyhrblykz .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#atyhrblykz .gt_from_md > :first-child {
+  margin-top: 0;
+}
+
+#atyhrblykz .gt_from_md > :last-child {
+  margin-bottom: 0;
+}
+
+#atyhrblykz .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#atyhrblykz .gt_stub {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 12px;
+}
+
+#atyhrblykz .gt_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#atyhrblykz .gt_first_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+}
+
+#atyhrblykz .gt_grand_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#atyhrblykz .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#atyhrblykz .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#atyhrblykz .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#atyhrblykz .gt_footnotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#atyhrblykz .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding: 4px;
+}
+
+#atyhrblykz .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#atyhrblykz .gt_sourcenote {
+  font-size: 90%;
+  padding: 4px;
+}
+
+#atyhrblykz .gt_left {
+  text-align: left;
+}
+
+#atyhrblykz .gt_center {
+  text-align: center;
+}
+
+#atyhrblykz .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#atyhrblykz .gt_font_normal {
+  font-weight: normal;
+}
+
+#atyhrblykz .gt_font_bold {
+  font-weight: bold;
+}
+
+#atyhrblykz .gt_font_italic {
+  font-style: italic;
+}
+
+#atyhrblykz .gt_super {
+  font-size: 65%;
+}
+
+#atyhrblykz .gt_footnote_marks {
+  font-style: italic;
+  font-size: 65%;
+}
+</style>
+<div id="atyhrblykz" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;"><table class="gt_table">
+  
+  <thead class="gt_col_headings">
+    <tr>
+      <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1">T</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1">Mild</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1">Severe</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1">Total</th>
+    </tr>
+  </thead>
+  <tbody class="gt_table_body">
+    <tr>
+      <td class="gt_row gt_left" style="background-color: #FFFFFF; color: #000000;">A</td>
+      <td class="gt_row gt_left" style="background-color: #FFFFFF; color: #000000;">12% (108/900)</td>
+      <td class="gt_row gt_left" style="background-color: #FFFFFF; color: #000000;">42% (42/100)</td>
+      <td class="gt_row gt_left" style="background-color: #E0FFFF; color: #000000; font-weight: bold;">15% (150/1000)</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left" style="background-color: #FFFFFF; color: #000000;">B</td>
+      <td class="gt_row gt_left" style="background-color: #E0FFFF; color: #000000; font-weight: bold;">10% (5/50)</td>
+      <td class="gt_row gt_left" style="background-color: #E0FFFF; color: #000000; font-weight: bold;">21% (95/450)</td>
+      <td class="gt_row gt_left" style="background-color: #FFFFFF; color: #000000;">20% (100/500)</td>
+    </tr>
+  </tbody>
+  
+  
+</table></div>
+]
+
+.pull-right[
+&lt;img src="piechart_disease.png" width="363" /&gt;
+]
+
+--
+
+.center[
+&lt;img src="01-Introduction_files/figure-html/unnamed-chunk-8-1.png" width="35%" /&gt;
+]
+
+---
+
+# Correlation is not Causation
+
+.center[
+&lt;img src="meme.jpg" width="435" /&gt;
+]
+
+---
+
+# Let's go to the opera!
+
+**Going to the opera** is *strongly correlated* with **living longer**
+
+- NY Times: [CLICK FOR ARTICLE](https://www.nytimes.com/2019/12/22/us/arts-health-effects-ucl-study.html?smtyp=cur&amp;smid=tw-nythealth)
+
+.pull-left[
+&lt;img src="dag_theater.png" width="356" /&gt;
+]
+
+---
+
+# Let's go to the opera!
+
+**Going to the opera** is *strongly correlated* with **living longer**
+
+- NY Times: [CLICK FOR ARTICLE](https://www.nytimes.com/2019/12/22/us/arts-health-effects-ucl-study.html?smtyp=cur&amp;smid=tw-nythealth)
+
+.pull-left[
+&lt;img src="dag_theater_money.png" width="366" /&gt;
+]
+
+--
+
+.pull-right[
+**Common cause**: Money 🤑🤑🤑
+
+1. Those who *attend the opera* differ from those who *do not attend the opera* in (at least) one fundamental way. 
+
+2. **Confounding**!
+]
+
+---
+
+# Let's go to the opera!
+
+**Going to the opera** is *strongly correlated* with **living longer**
+
+- NY Times: [CLICK FOR ARTICLE](https://www.nytimes.com/2019/12/22/us/arts-health-effects-ucl-study.html?smtyp=cur&amp;smid=tw-nythealth)
+
+.pull-left[
+&lt;img src="dag_theater_causal.png" width="363" /&gt;
+]
+
+--
+
+.pull-right[
+**Common cause**: Money 🤑🤑🤑
+
+1. Those who *attend the opera* differ from those who *do not attend the opera* in (at least) one fundamental way. 
+
+2. **Confounding**!
+
+Total **association**: mixture of **causal** and **confounding** association
+]
+
+---
+
+# One more...
+
+**Films Nicholas Cage appears in**
+
+- *is correlated with*
+
+**Number of people who drowned by falling into a pool**&lt;sup&gt;[*]&lt;/sup&gt;
+
+(*r* = 0.666, seriously)
+
+--
+
+.center[
+&lt;img src="dag_cage.png" width="598" /&gt;
+]
+
+.footnote[
+[*] [https://www.tylervigen.com/spurious-correlations](https://www.tylervigen.com/spurious-correlations)
+]
+
+---
+
+# Correlation is not Causation
+
+.center[
+&lt;img src="meme.jpg" width="435" /&gt;
+]
+
+--
+
+.center[
+# .display[Then, what does imply causation?!]
+]
+
+---
+
+# Potential Outcomes
+
+**Intuition**
+
+*Inferring the (causal) effect of an intervention on some outcome*
+
+.pull-left[
+&lt;img src="emoji_neutral.png" width="98" /&gt;
+
+- *A student, pre-STAT 228*
+]
+
+--
+
+.pull-right[
+&lt;img src="stat228_potential.png" width="316" /&gt;
+
+- *A causal effect!*
+]
+
+---
+
+# Potential Outcomes
+
+**Intuition**
+
+*Inferring the (causal) effect of an intervention on some outcome*
+
+.pull-left[
+&lt;img src="emoji_neutral.png" width="98" /&gt;
+
+- *A student, pre-STAT 228*
+]
+
+.pull-right[
+&lt;img src="stat228_potential2.png" width="323" /&gt;
+
+- *No causal effect...*
+]
+
+---
+
+# Potential Outcomes
+
+**Notation**
+
+.pull-left[
+- *T*: observed **treatment** (binary)
+
+- *Y*: observed **outcome**
+
+- *i*: denotes *specific observation*
+    - Example: `\(Y_{i}\)`
+]
+
+--
+
+.pull-right[
+&lt;img src="stat228_do_calc.png" width="323" /&gt;
+]
+
+--
+
+**More Notation**
+
+- `\(Y_{i}(1)\)`: **potential outcome** *conditional on treatment*
+- `\(Y_{i}(0)\)`: **potential outcome** *conditional on no treatment*
+
+--
+
+.center[
+**Causal Effect**: `\(Y_{i}(1)-Y_{i}(0)\)`
+]
+
+---
+
+# Fundamental Problem of Causal Inference
+
+.center[
+&lt;img src="emoji_thinking.jpeg" width="86" /&gt;
+]
+
+--
+
+&gt; [(Holland, 1986)](http://www.cs.columbia.edu/~blei/fogm/2019F/readings/Holland1986.pdf): We only ever observe one realization. 
+
+**If you chose to take STAT 228, you cannot simultaneously *not choose* to take it!**
+
+.pull-left[
+&lt;img src="stat228_problem.png" width="362" /&gt;
+]
+
+--
+
+.pull-right.center[
+**Causal Effect**: `\(Y_{i}(1)-\)`❓️
+]
+
+---
+
+# One more time...
+
+.center[
+&lt;img src="meme.jpg" width="435" /&gt;
+]
+
+---
+
+# Correlation vs. Causation
+
+*How do we find...*
+
+.pull-left[
+&lt;p style="text-align: center;"&gt;&lt;b&gt;Correlation&lt;/b&gt;&lt;/p&gt;
+
+`$$r_{xy}=\frac{\sum(x_{i}-\bar{x})(y_{i}-\bar{y})}{\sqrt{\sum(x_{i}-\bar{x})^{2}\sum(y_{i}-\bar{y})^{2}}}$$`
+
+```r
+library(moderndive)
+
+house_prices %&gt;%
+  get_correlation(price ~ sqft_living)
+```
+
+```
+## # A tibble: 1 x 1
+##     cor
+##   &lt;dbl&gt;
+## 1 0.702
+```
+]
+
+--
+
+.pull-right.center[
+&lt;p style="text-align: center;"&gt;&lt;b&gt;Causation&lt;/b&gt;&lt;/p&gt;
+
+&lt;img src="emoji_thinking.jpeg" width="86" /&gt;
+
+*Philosophy*
+
+(and STAT 391...)
+
+&lt;img src="STAT391_hex.png" width="50%" /&gt;
+]
+
+---
+
+# OK, so what is causation?
+
+A variable *X* can be said to **cause** an outcome *Y* if&lt;sup&gt;1&lt;/sup&gt;:
+
+- **Association**: *X* and *Y* are *associated*
+
+- **Time ordering**: *X* *precedes* *Y*
+
+- **Nonspuriousness**: The association between *X* and *Y* is *not spurious*
+
+.footnote[
+[1] F. Urdinez and A. Cruz. *R for Political Data Science* (2020). 
+]
+
+---
+
+# The Causal Revolution
+
+.left-column[
+&lt;img src="book_of_why.jpg" width="444" /&gt;
+]
+
+.right-column[
+&lt;img src="pearl.jpg" width="960" /&gt;
+]
+
+--
+
+(Pearl et al., 2016): *X* is a cause of *Y* if *Y* **listens to** *X* and decides its value in response to what it hears. 
+
+- But what if *Y* listens to more than just *X*?
+
+---
+
+# The Ladder of Causation
+
+From *The Book of Why*
+
+.center[
+&lt;img src="ladder.png" width="395" /&gt;
+]
+
+
+---
+
+# Causal Diagrams
+
+.center[
+### .display[Directed Acyclic Graphs (DAGs)]
+]
+
+.pull-left[
+
+```r
+library(ggdag)
+example_dag = 
+  dagify(Y ~ X + Z, 
+         X ~ Z, 
+         coords = 
+           list(x = c(X = 1, Z = 2, Y = 3), 
+                y = c(X = 1, Z = 2, Y = 1)))
+ggdag(example_dag) + 
+  theme_dag()
+```
+
+&lt;img src="01-Introduction_files/figure-html/unnamed-chunk-29-1.png" width="100%" /&gt;
+]
+
+.pull-right[
+- Maps the *philosophical* model
+
+- **Goal**: Isolate and *identify* the **causal pathway** between *X* and *Y* by *controlling for* *Z*. 
+
+We'll cover several popular methods for isolating causal pathways throughout the course!
+]
+
+
+---
+
+# Causal Inference in Observational Studies
+
+**Piéchart Disease** 😨😱😨😱😨😱
+- **Treatment**, *T*: A (0) or B (1)
+- **Condition**, *C*: *mild* (0) or *severe* (1)
+- **Outcome**, *Y*: *no* (0) or *yes* (1)
+
+.pull-left[
+&lt;p style="text-align: center;"&gt;&lt;b&gt;Ideal (RCT)&lt;/b&gt;&lt;/p&gt;
+
+![](01-Introduction_files/figure-html/unnamed-chunk-30-1.png)&lt;!-- --&gt;
+]
+
+--
+
+.pull-right[
+&lt;p style="text-align: center;"&gt;&lt;b&gt;Observational Study&lt;/b&gt;&lt;/p&gt;
+
+![](01-Introduction_files/figure-html/unnamed-chunk-31-1.png)&lt;!-- --&gt;
+]
+
+--
+
+You can't always randomize treatment!
+
+- Might be **unethical**, **infeasible**, or straight-up **impossible**.
+
+---
+
+# So...
+
+How do we estimate causal effects in observational studies?!
+
+.center[
+
+## Backdoor adjustment
+]
+
+- In other words, *control for the right variables*!
+
+--
+
+.pull-left[
+
+```r
+fit_causal = lm(Y ~ T + C, data = ...)
+summary(fit_causal)
+```
+]
+
+.pull-right[
+![](01-Introduction_files/figure-html/unnamed-chunk-33-1.png)&lt;!-- --&gt;
+]
+
+- **Note**: *Linear regression* is one way to adjust for confounders, and it comes with its limitations!
+
+
+---
+
+class: center, middle, frame
+
+# Class Details
+
+---
+
+# Readings
+
+- Paul J. Gertler et al., **Impact Evaluation in Practice**, 2nd ed.
+    - Available here: [https://openknowledge.worldbank.org/handle/10986/25030](https://openknowledge.worldbank.org/handle/10986/25030)
+    
+- Scott Cunningham, **Causal Inference: The Mixtape**, 2018. 
+    - Available here: [https://www.scunning.com/mixtape.html](https://www.scunning.com/mixtape.html)
+    
+- Miguel A. Hernan and James M. Robins, **Causal Inference: What If**, 2020. 
+    - Available here: [https://www.hsph.harvard.edu/miguel-hernan/causal-inference-book/](https://www.hsph.harvard.edu/miguel-hernan/causal-inference-book/)
+
+- and lots of papers!
+
+(While some of the readings can have fairly technical portions, we'll focus on **applied causal inference**!)
+
+---
+
+# Grades
+
+- **Bi-weekly problem sets [20%]**: Completed in RStudio via *R Markdown*
+
+- **Seminar/Journal Club Presentation [20%]**: Starting in **Module 4**, students will develop, present, and lead a discussion on a journal article and/or book reading related to the appropriate module.
+
+- **Final Project [30%]**: You will submit a *causal research proposal* on any topic of your choosing and give a short presentation.
+    
+- **Casual Causal Paper [20%]**: **Two options**, both of which are *self-scheduled*, and you can submit at any point during the semester. :
+    1. Write a review of a published journal article or news article, critically assessing it from a causal analysis standpoint. 
+    2. Write a tutorial blog post on (a) any causal inference method covered in class *that you did not cover in your seminar presentation*, or (b) any method *not* covered in class that you'd like to explore on your own. 
+
+- **Virtual Class Participation [10%]**
+
+---
+
+# Course Format
+
+(I'll try my best to be consistent and stick to this format!)
+
+**Tuesdays**: Interactive lecture introducing new material
+
+**Thursdays**: Seminar/Journal Club Presentation, R tutorials, breakout room activities in R, etc.
+
+--
+
+- For maximum benefit, complete the assigned reading in advance and come to class ready with questions, and try your best to stick with the assignment schedule posted on the syllabus.
+    - But...
+
+--
+
+&gt; I am aiming for total flexibility. *We're still in a pandemic and learning in this environment is HARD*. Issues will arise, and that’s ok! Let’s communicate and we can figure out a plan together. **My main goal is to support you and your learning**. 
+
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"countIncrementalSlides": false,
+"highlightLines": true
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
