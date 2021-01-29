@@ -29,7 +29,7 @@ body {
 h1, h2, h3 {
   font-family: 'Yanone Kaffeesatz';
   font-weight: normal;
-  color: #5E5E5E;
+  color: #C4689B;
 }
 .remark-slide-content {
   background-color: #FFFFFF;
@@ -44,9 +44,11 @@ h1, h2, h3 {
 }
 .remark-slide-content h2 {
     font-size: 45px;
+    color: #421366;
 }
 .remark-slide-content h3 {
     font-size: 35px;
+    color: #0174D9;
 }
 .remark-code, .remark-inline-code {
   font-family: 'Source Code Pro', 'Lucida Console', Monaco, monospace;
@@ -56,18 +58,18 @@ h1, h2, h3 {
 }
 .remark-inline-code {
   font-size: 1em;
-  color: #5E5E5E;
+  color: #0174D9;
   
   
 }
 .remark-slide-number {
-  color: #5E5E5E;
+  color: #C4689B;
   opacity: 1;
   font-size: 0.9em;
 }
-strong{color:#5E5E5E;}
+strong{color:#000000;}
 a, a > code {
-  color: #5E5E5E;
+  color: #000000;
   text-decoration: none;
 }
 .footnote {
@@ -81,7 +83,7 @@ a, a > code {
   background-color: rgba(255,255,0,0.5);
 }
 .inverse {
-  background-color: #5E5E5E;
+  background-color: #C4689B;
   color: #FFFFFF;
   
 }
@@ -92,7 +94,7 @@ a, a > code {
   color: #FFFFFF;
 }
 .title-slide {
-  background-color: #5E5E5E;
+  background-color: #C4689B;
   background-image: url(STAT391_hex.png);
 	background-position: center bottom;
 	background-size: 20%;
@@ -109,10 +111,10 @@ a, a > code {
   float: left;
 }
 .left-column h2, .left-column h3 {
-  color: #5E5E5E99;
+  color: #C4689B99;
 }
 .left-column h2:last-of-type, .left-column h3:last-child {
-  color: #5E5E5E;
+  color: #C4689B;
 }
 .right-column {
   width: 75%;
@@ -134,7 +136,7 @@ img, video, iframe {
   max-width: 100%;
 }
 blockquote {
-  border-left: solid 5px #5E5E5E80;
+  border-left: solid 5px #C4689B80;
   padding-left: 1em;
 }
 .remark-slide table {
@@ -144,7 +146,7 @@ blockquote {
 }
 .remark-slide table thead th { border-bottom: 1px solid #ddd; }
 th, td { padding: 5px; }
-.remark-slide thead, .remark-slide tfoot, .remark-slide tr:nth-child(even) { background: #C6C6DB }
+.remark-slide thead, .remark-slide tfoot, .remark-slide tr:nth-child(even) { background: #FFFFFF }
 table.dataTable tbody {
   background-color: #FFFFFF;
   color: #272822;
@@ -153,7 +155,7 @@ table.dataTable.display tbody tr.odd {
   background-color: #FFFFFF;
 }
 table.dataTable.display tbody tr.even {
-  background-color: #C6C6DB;
+  background-color: #FFFFFF;
 }
 table.dataTable.hover tbody tr:hover, table.dataTable.display tbody tr:hover {
   background-color: rgba(255, 255, 255, 0.5);
@@ -188,9 +190,43 @@ table.dataTable.hover tbody tr:hover, table.dataTable.display tbody tr:hover {
   border-bottom: 3px solid #bed3ec;
 }
 
-.display {
+.display1 {
   font-weight: 700;
-  color: #2f5275;
-  border-bottom: 3px solid #bed3ec;
+  font-size: 25px;
+  color: #421366;
 }
 
+.display2 {
+  font-weight: 700;
+  font-size: 25px;
+  color: #0174D9;
+}
+
+.display3 {
+  font-weight: 700;
+  font-size: 25px;
+  color: #B30201;
+}
+
+.display4 {
+  font-weight: 700;
+  font-size: 25px;
+  color: #ECD468;
+}
+
+.center-small {
+  font-size: 0.5em;
+  text-align: center;
+}
+
+.pull-left-small {
+  font-size: 0.75em;
+  float: left;
+  width: 47%;
+}
+
+.pull-right-small {
+  font-size: 0.5em;
+  float: left;
+  width: 47%;
+}

@@ -1,6 +1,6 @@
 ---
 title: "STAT 391: Applied Causal Inference"
-subtitle: "Introduction to Causal Inference"
+subtitle: "The Causal Revolution"
 author: "Anthony Scotina"
 date: 
 output:
@@ -15,6 +15,7 @@ output:
 ```{r xaringan-themer, include = FALSE}
 library(xaringanthemer)
 mono_accent(base_color = "#5E5E5E") #3E8A83?
+options(htmltools.preserve.raw = FALSE)
 ```
 
 ```{r, include = FALSE}
@@ -29,7 +30,39 @@ pagedown::chrome_print("~/Dropbox/Teaching/03-Simmons Courses/MATH228-Introducti
 
 class: center, middle, frame
 
-# The Causal Revolution
+# Revisiting Intro Stats
+
+---
+
+# Three Relevant Topics
+
+### From Intro Stats:
+
+.center[
+
+## Simpson's Paradox
+
+]
+
+--
+
+<br></br>
+
+.center[
+
+## CoRrElAtIoN iS nOt CaUsAtIoN
+
+]
+
+--
+
+<br></br>
+
+.center[
+
+## RCTs vs. Observational Studies
+
+]
 
 ---
 
@@ -71,6 +104,10 @@ New disease: **Piéchart Disease**<sup>[*]</sup> 😨😱😨😱😨😱
 
 - **Outcome**, *Y*: *no* (0) or *yes* (1)
 
+<br></br>
+
+.display2[Question]: Is there a **causal effect** between treatment and outcome?
+
 .footnote[
 [*] the "t" is silent
 ]
@@ -102,12 +139,12 @@ results %>%
 
 .center[
 ```{r, echo = FALSE, dpi = 300, fig.width=9, fig.height=4.5, out.width="100%"}
-example_dag = dagify(y ~ x, 
-                     labels = c("y" = "Outcome", 
-                                "x" = "Treatment"),
-                     coords = list(x = c(x = 1, y = 2), 
-                                   y = c(x = 1, y = 1)))
-ggdag(example_dag, text = FALSE, use_labels = "label", seed = 12) + 
+example_dag = dagify(Y ~ T, 
+                     labels = c("Y" = "Outcome", 
+                                "T" = "Treatment"),
+                     coords = list(x = c(T = 1, Y = 2), 
+                                   y = c(T = 1, Y = 1)))
+ggdag(example_dag, text = TRUE, seed = 12) + 
   theme_dag()
 ```
 ]
@@ -189,12 +226,34 @@ example_dag = dagify(Y ~ T + C,
                                 "C" = "Condition"),
                      coords = list(x = c(T = 1, Y = 3, C = 2), 
                                    y = c(T = 1, Y = 1, C = 2)))
-ggdag(example_dag, text = FALSE, use_labels = "label") + 
+ggdag(example_dag) + 
   geom_dag_point(color = "grey80", size = 17) +
   geom_dag_text(color = "black", size = 5) +
   theme_dag()
 ```
 ]
+
+---
+
+# Simpson's Paradox
+
+.display1[Background] 
+
+- [In 1951](https://rss.onlinelibrary.wiley.com/doi/10.1111/j.2517-6161.1951.tb00088.x), E.H. Simpson published a *famous* article (cited over 2000 times) that described an analysis of 2x2 tables that led to *paradoxical* results. 
+
+--
+
+.display2[What appears to have happened]
+
+- A trend appears in *several different groups*, but disappears (or reverses) when these groups are combined. 
+
+--
+
+.display3[What is *actually* happening]
+
+- The paradox is the result of disregarding the *causal structure* of the research problem [(Hernan et al., 2011)](https://academic.oup.com/ije/article/40/3/780/746837). 
+
+> Once the causal goal is made explicit and causal considerations are incorporated into the analysis, the course of action becomes crystal clear. 
 
 ---
 
@@ -312,7 +371,7 @@ knitr::include_graphics("meme.jpg")
 
 ---
 
-# Potential Outcomes
+# Potential Outcomes/Counterfactuals
 
 **Intuition**
 
@@ -421,7 +480,49 @@ knitr::include_graphics("stat228_problem.png")
 --
 
 .pull-right.center[
-**Causal Effect**: $Y_{i}(1)-$❓️
+**Individual Causal Effect** 
+
+$Y_{i}(1)-$❓️
+]
+
+---
+
+# Fundamental Problem of Causal Inference
+
+.center[
+```{r, echo = FALSE, dpi = 250}
+knitr::include_graphics("emoji_thinking.jpeg")
+```
+]
+
+> [(Holland, 1986)](http://www.cs.columbia.edu/~blei/fogm/2019F/readings/Holland1986.pdf): We only ever observe one realization. 
+
+**If you chose to take STAT 228, you cannot simultaneously *not choose* to take it!**
+
+.pull-left[
+
+.center[
+**Average Causal Effect?**
+
+$(\bar{Y}\mid T = 1) -(\bar{Y}\mid T = 0)$
+
+(i.e., a *difference in means*)
+
+.display2[Can we do this?]
+
+]
+
+]
+
+--
+
+.pull-right.center[
+**Probably not...**
+
+```{r, echo = FALSE, dpi = 300}
+knitr::include_graphics("stat228_confounding.png")
+```
+
 ]
 
 ---
@@ -679,6 +780,26 @@ dagify(
 
 ---
 
+# Goals
+
+.center[
+### Understand the *philosophy* of causation
+
+<br></br>
+
+### Design rigorous evaluation strategies
+
+<br></br>
+
+### Conduct independent research/lit review
+
+<br></br>
+
+### Communication!
+]
+
+---
+
 class: center, middle, frame
 
 # Class Details
@@ -704,15 +825,13 @@ class: center, middle, frame
 
 # Grades
 
-- **Bi-weekly problem sets [20%]**: Completed in RStudio via *R Markdown*
+- **Problem sets [20%]**: Completed in RStudio via *R Markdown*
 
 - **Seminar/Journal Club Presentation [20%]**: Starting in **Module 4**, students will develop, present, and lead a discussion on a journal article and/or book reading related to the appropriate module.
 
-- **Final Project [30%]**: You will submit a *causal research proposal* on any topic of your choosing and give a short presentation.
+- **Final Project [30%]**: You will submit a *causal research proposal* on a topic of your choosing and give a short presentation.
     
-- **Casual Causal Paper [20%]**: **Two options**, both of which are *self-scheduled*, and you can submit at any point during the semester. :
-    1. Write a review of a published journal article or news article, critically assessing it from a causal analysis standpoint. 
-    2. Write a tutorial blog post on (a) any causal inference method covered in class *that you did not cover in your seminar presentation*, or (b) any method *not* covered in class that you'd like to explore on your own. 
+- **Casual Causal Paper [20%]**: Two *thought papers* (~2 pages each) will be assigned during the semester asking you to take a stance on a prompt, and provide evidence for that stance based on material related to the course.
 
 - **Virtual Class Participation [10%]**
 
@@ -735,3 +854,22 @@ class: center, middle, frame
 
 > I am aiming for total flexibility. *We're still in a pandemic and learning in this environment is HARD*. Issues will arise, and that’s ok! Let’s communicate and we can figure out a plan together. **My main goal is to support you and your learning**. 
 
+---
+
+# Schedule
+
+.pull-left[
+.center[
+```{r, echo = FALSE, dpi = 300}
+knitr::include_graphics("STAT391_hex.png")
+```
+]
+]
+
+.pull-right[
+.display1[Part 1:] **R Review** (data visualization, wrangling, regression)
+
+.display2[Part 2:] **Theory of Causal Inference** (potential outcomes, graphical models, randomized trials)
+
+.display3[Part 3:] **Tools and Methods** (matching, weighting, difference-in-differences, regression discontinuity, instrumental variables)
+]

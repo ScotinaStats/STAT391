@@ -4,7 +4,7 @@
     <title>STAT 391: Applied Causal Inference</title>
     <meta charset="utf-8" />
     <meta name="author" content="Anthony Scotina" />
-    <script src="libs/header-attrs-2.3/header-attrs.js"></script>
+    <script src="libs/header-attrs-2.6/header-attrs.js"></script>
     <link rel="stylesheet" href="my-theme.css" type="text/css" />
     <link rel="stylesheet" href="my-fonts.css" type="text/css" />
   </head>
@@ -13,7 +13,7 @@
 class: center, middle, inverse, title-slide
 
 # STAT 391: Applied Causal Inference
-## Introduction to Causal Inference
+## The Causal Revolution
 ### Anthony Scotina
 
 ---
@@ -29,7 +29,39 @@ pagedown::chrome_print("~/Dropbox/Teaching/03-Simmons Courses/MATH228-Introducti
 
 class: center, middle, frame
 
-# The Causal Revolution
+# Revisiting Intro Stats
+
+---
+
+# Three Relevant Topics
+
+### From Intro Stats:
+
+.center[
+
+## Simpson's Paradox
+
+]
+
+--
+
+&lt;br&gt;&lt;/br&gt;
+
+.center[
+
+## CoRrElAtIoN iS nOt CaUsAtIoN
+
+]
+
+--
+
+&lt;br&gt;&lt;/br&gt;
+
+.center[
+
+## RCTs vs. Observational Studies
+
+]
 
 ---
 
@@ -62,6 +94,10 @@ New disease: **Piéchart Disease**&lt;sup&gt;[*]&lt;/sup&gt; 😨😱😨😱�
 - **Condition**, *C*: *mild* (0) or *severe* (1)
 
 - **Outcome**, *Y*: *no* (0) or *yes* (1)
+
+&lt;br&gt;&lt;/br&gt;
+
+.display2[Question]: Is there a **causal effect** between treatment and outcome?
 
 .footnote[
 [*] the "t" is silent
@@ -450,7 +486,7 @@ New disease: **Piéchart Disease**&lt;sup&gt;[*]&lt;/sup&gt; 😨😱😨😱�
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif;
 }
 
-#rofetlebom .gt_table {
+#sedrrofetl .gt_table {
   display: table;
   border-collapse: collapse;
   margin-left: auto;
@@ -475,7 +511,7 @@ New disease: **Piéchart Disease**&lt;sup&gt;[*]&lt;/sup&gt; 😨😱😨😱�
   border-left-color: #D3D3D3;
 }
 
-#rofetlebom .gt_heading {
+#sedrrofetl .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -487,7 +523,7 @@ New disease: **Piéchart Disease**&lt;sup&gt;[*]&lt;/sup&gt; 😨😱😨😱�
   border-right-color: #D3D3D3;
 }
 
-#rofetlebom .gt_title {
+#sedrrofetl .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -497,7 +533,7 @@ New disease: **Piéchart Disease**&lt;sup&gt;[*]&lt;/sup&gt; 😨😱😨😱�
   border-bottom-width: 0;
 }
 
-#rofetlebom .gt_subtitle {
+#sedrrofetl .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -507,13 +543,13 @@ New disease: **Piéchart Disease**&lt;sup&gt;[*]&lt;/sup&gt; 😨😱😨😱�
   border-top-width: 0;
 }
 
-#rofetlebom .gt_bottom_border {
+#sedrrofetl .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#rofetlebom .gt_col_headings {
+#sedrrofetl .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -528,7 +564,7 @@ New disease: **Piéchart Disease**&lt;sup&gt;[*]&lt;/sup&gt; 😨😱😨😱�
   border-right-color: #D3D3D3;
 }
 
-#rofetlebom .gt_col_heading {
+#sedrrofetl .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -548,7 +584,7 @@ New disease: **Piéchart Disease**&lt;sup&gt;[*]&lt;/sup&gt; 😨😱😨😱�
   overflow-x: hidden;
 }
 
-#rofetlebom .gt_column_spanner_outer {
+#sedrrofetl .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -560,15 +596,15 @@ New disease: **Piéchart Disease**&lt;sup&gt;[*]&lt;/sup&gt; 😨😱😨😱�
   padding-right: 4px;
 }
 
-#rofetlebom .gt_column_spanner_outer:first-child {
+#sedrrofetl .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#rofetlebom .gt_column_spanner_outer:last-child {
+#sedrrofetl .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#rofetlebom .gt_column_spanner {
+#sedrrofetl .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -580,7 +616,7 @@ New disease: **Piéchart Disease**&lt;sup&gt;[*]&lt;/sup&gt; 😨😱😨😱�
   width: 100%;
 }
 
-#rofetlebom .gt_group_heading {
+#sedrrofetl .gt_group_heading {
   padding: 8px;
   color: #333333;
   background-color: #FFFFFF;
@@ -602,7 +638,7 @@ New disease: **Piéchart Disease**&lt;sup&gt;[*]&lt;/sup&gt; 😨😱😨😱�
   vertical-align: middle;
 }
 
-#rofetlebom .gt_empty_group_heading {
+#sedrrofetl .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -617,15 +653,15 @@ New disease: **Piéchart Disease**&lt;sup&gt;[*]&lt;/sup&gt; 😨😱😨😱�
   vertical-align: middle;
 }
 
-#rofetlebom .gt_from_md > :first-child {
+#sedrrofetl .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#rofetlebom .gt_from_md > :last-child {
+#sedrrofetl .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#rofetlebom .gt_row {
+#sedrrofetl .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -644,7 +680,7 @@ New disease: **Piéchart Disease**&lt;sup&gt;[*]&lt;/sup&gt; 😨😱😨😱�
   overflow-x: hidden;
 }
 
-#rofetlebom .gt_stub {
+#sedrrofetl .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -656,7 +692,7 @@ New disease: **Piéchart Disease**&lt;sup&gt;[*]&lt;/sup&gt; 😨😱😨😱�
   padding-left: 12px;
 }
 
-#rofetlebom .gt_summary_row {
+#sedrrofetl .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -666,7 +702,7 @@ New disease: **Piéchart Disease**&lt;sup&gt;[*]&lt;/sup&gt; 😨😱😨😱�
   padding-right: 5px;
 }
 
-#rofetlebom .gt_first_summary_row {
+#sedrrofetl .gt_first_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -676,7 +712,7 @@ New disease: **Piéchart Disease**&lt;sup&gt;[*]&lt;/sup&gt; 😨😱😨😱�
   border-top-color: #D3D3D3;
 }
 
-#rofetlebom .gt_grand_summary_row {
+#sedrrofetl .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -686,7 +722,7 @@ New disease: **Piéchart Disease**&lt;sup&gt;[*]&lt;/sup&gt; 😨😱😨😱�
   padding-right: 5px;
 }
 
-#rofetlebom .gt_first_grand_summary_row {
+#sedrrofetl .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -696,11 +732,11 @@ New disease: **Piéchart Disease**&lt;sup&gt;[*]&lt;/sup&gt; 😨😱😨😱�
   border-top-color: #D3D3D3;
 }
 
-#rofetlebom .gt_striped {
+#sedrrofetl .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#rofetlebom .gt_table_body {
+#sedrrofetl .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -709,7 +745,7 @@ New disease: **Piéchart Disease**&lt;sup&gt;[*]&lt;/sup&gt; 😨😱😨😱�
   border-bottom-color: #D3D3D3;
 }
 
-#rofetlebom .gt_footnotes {
+#sedrrofetl .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -723,13 +759,13 @@ New disease: **Piéchart Disease**&lt;sup&gt;[*]&lt;/sup&gt; 😨😱😨😱�
   border-right-color: #D3D3D3;
 }
 
-#rofetlebom .gt_footnote {
+#sedrrofetl .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding: 4px;
 }
 
-#rofetlebom .gt_sourcenotes {
+#sedrrofetl .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -743,46 +779,46 @@ New disease: **Piéchart Disease**&lt;sup&gt;[*]&lt;/sup&gt; 😨😱😨😱�
   border-right-color: #D3D3D3;
 }
 
-#rofetlebom .gt_sourcenote {
+#sedrrofetl .gt_sourcenote {
   font-size: 90%;
   padding: 4px;
 }
 
-#rofetlebom .gt_left {
+#sedrrofetl .gt_left {
   text-align: left;
 }
 
-#rofetlebom .gt_center {
+#sedrrofetl .gt_center {
   text-align: center;
 }
 
-#rofetlebom .gt_right {
+#sedrrofetl .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#rofetlebom .gt_font_normal {
+#sedrrofetl .gt_font_normal {
   font-weight: normal;
 }
 
-#rofetlebom .gt_font_bold {
+#sedrrofetl .gt_font_bold {
   font-weight: bold;
 }
 
-#rofetlebom .gt_font_italic {
+#sedrrofetl .gt_font_italic {
   font-style: italic;
 }
 
-#rofetlebom .gt_super {
+#sedrrofetl .gt_super {
   font-size: 65%;
 }
 
-#rofetlebom .gt_footnote_marks {
+#sedrrofetl .gt_footnote_marks {
   font-style: italic;
   font-size: 65%;
 }
 </style>
-<div id="rofetlebom" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;"><table class="gt_table">
+<div id="sedrrofetl" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;"><table class="gt_table">
   
   <thead class="gt_col_headings">
     <tr>
@@ -824,7 +860,7 @@ New disease: **Piéchart Disease**&lt;sup&gt;[*]&lt;/sup&gt; 😨😱😨😱�
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif;
 }
 
-#atyhrblykz .gt_table {
+#ebomatyhrb .gt_table {
   display: table;
   border-collapse: collapse;
   margin-left: auto;
@@ -849,7 +885,7 @@ New disease: **Piéchart Disease**&lt;sup&gt;[*]&lt;/sup&gt; 😨😱😨😱�
   border-left-color: #D3D3D3;
 }
 
-#atyhrblykz .gt_heading {
+#ebomatyhrb .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -861,7 +897,7 @@ New disease: **Piéchart Disease**&lt;sup&gt;[*]&lt;/sup&gt; 😨😱😨😱�
   border-right-color: #D3D3D3;
 }
 
-#atyhrblykz .gt_title {
+#ebomatyhrb .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -871,7 +907,7 @@ New disease: **Piéchart Disease**&lt;sup&gt;[*]&lt;/sup&gt; 😨😱😨😱�
   border-bottom-width: 0;
 }
 
-#atyhrblykz .gt_subtitle {
+#ebomatyhrb .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -881,13 +917,13 @@ New disease: **Piéchart Disease**&lt;sup&gt;[*]&lt;/sup&gt; 😨😱😨😱�
   border-top-width: 0;
 }
 
-#atyhrblykz .gt_bottom_border {
+#ebomatyhrb .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#atyhrblykz .gt_col_headings {
+#ebomatyhrb .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -902,7 +938,7 @@ New disease: **Piéchart Disease**&lt;sup&gt;[*]&lt;/sup&gt; 😨😱😨😱�
   border-right-color: #D3D3D3;
 }
 
-#atyhrblykz .gt_col_heading {
+#ebomatyhrb .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -922,7 +958,7 @@ New disease: **Piéchart Disease**&lt;sup&gt;[*]&lt;/sup&gt; 😨😱😨😱�
   overflow-x: hidden;
 }
 
-#atyhrblykz .gt_column_spanner_outer {
+#ebomatyhrb .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -934,15 +970,15 @@ New disease: **Piéchart Disease**&lt;sup&gt;[*]&lt;/sup&gt; 😨😱😨😱�
   padding-right: 4px;
 }
 
-#atyhrblykz .gt_column_spanner_outer:first-child {
+#ebomatyhrb .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#atyhrblykz .gt_column_spanner_outer:last-child {
+#ebomatyhrb .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#atyhrblykz .gt_column_spanner {
+#ebomatyhrb .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -954,7 +990,7 @@ New disease: **Piéchart Disease**&lt;sup&gt;[*]&lt;/sup&gt; 😨😱😨😱�
   width: 100%;
 }
 
-#atyhrblykz .gt_group_heading {
+#ebomatyhrb .gt_group_heading {
   padding: 8px;
   color: #333333;
   background-color: #FFFFFF;
@@ -976,7 +1012,7 @@ New disease: **Piéchart Disease**&lt;sup&gt;[*]&lt;/sup&gt; 😨😱😨😱�
   vertical-align: middle;
 }
 
-#atyhrblykz .gt_empty_group_heading {
+#ebomatyhrb .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -991,15 +1027,15 @@ New disease: **Piéchart Disease**&lt;sup&gt;[*]&lt;/sup&gt; 😨😱😨😱�
   vertical-align: middle;
 }
 
-#atyhrblykz .gt_from_md > :first-child {
+#ebomatyhrb .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#atyhrblykz .gt_from_md > :last-child {
+#ebomatyhrb .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#atyhrblykz .gt_row {
+#ebomatyhrb .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1018,7 +1054,7 @@ New disease: **Piéchart Disease**&lt;sup&gt;[*]&lt;/sup&gt; 😨😱😨😱�
   overflow-x: hidden;
 }
 
-#atyhrblykz .gt_stub {
+#ebomatyhrb .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1030,7 +1066,7 @@ New disease: **Piéchart Disease**&lt;sup&gt;[*]&lt;/sup&gt; 😨😱😨😱�
   padding-left: 12px;
 }
 
-#atyhrblykz .gt_summary_row {
+#ebomatyhrb .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1040,7 +1076,7 @@ New disease: **Piéchart Disease**&lt;sup&gt;[*]&lt;/sup&gt; 😨😱😨😱�
   padding-right: 5px;
 }
 
-#atyhrblykz .gt_first_summary_row {
+#ebomatyhrb .gt_first_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1050,7 +1086,7 @@ New disease: **Piéchart Disease**&lt;sup&gt;[*]&lt;/sup&gt; 😨😱😨😱�
   border-top-color: #D3D3D3;
 }
 
-#atyhrblykz .gt_grand_summary_row {
+#ebomatyhrb .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1060,7 +1096,7 @@ New disease: **Piéchart Disease**&lt;sup&gt;[*]&lt;/sup&gt; 😨😱😨😱�
   padding-right: 5px;
 }
 
-#atyhrblykz .gt_first_grand_summary_row {
+#ebomatyhrb .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1070,11 +1106,11 @@ New disease: **Piéchart Disease**&lt;sup&gt;[*]&lt;/sup&gt; 😨😱😨😱�
   border-top-color: #D3D3D3;
 }
 
-#atyhrblykz .gt_striped {
+#ebomatyhrb .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#atyhrblykz .gt_table_body {
+#ebomatyhrb .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1083,7 +1119,7 @@ New disease: **Piéchart Disease**&lt;sup&gt;[*]&lt;/sup&gt; 😨😱😨😱�
   border-bottom-color: #D3D3D3;
 }
 
-#atyhrblykz .gt_footnotes {
+#ebomatyhrb .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1097,13 +1133,13 @@ New disease: **Piéchart Disease**&lt;sup&gt;[*]&lt;/sup&gt; 😨😱😨😱�
   border-right-color: #D3D3D3;
 }
 
-#atyhrblykz .gt_footnote {
+#ebomatyhrb .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding: 4px;
 }
 
-#atyhrblykz .gt_sourcenotes {
+#ebomatyhrb .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1117,46 +1153,46 @@ New disease: **Piéchart Disease**&lt;sup&gt;[*]&lt;/sup&gt; 😨😱😨😱�
   border-right-color: #D3D3D3;
 }
 
-#atyhrblykz .gt_sourcenote {
+#ebomatyhrb .gt_sourcenote {
   font-size: 90%;
   padding: 4px;
 }
 
-#atyhrblykz .gt_left {
+#ebomatyhrb .gt_left {
   text-align: left;
 }
 
-#atyhrblykz .gt_center {
+#ebomatyhrb .gt_center {
   text-align: center;
 }
 
-#atyhrblykz .gt_right {
+#ebomatyhrb .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#atyhrblykz .gt_font_normal {
+#ebomatyhrb .gt_font_normal {
   font-weight: normal;
 }
 
-#atyhrblykz .gt_font_bold {
+#ebomatyhrb .gt_font_bold {
   font-weight: bold;
 }
 
-#atyhrblykz .gt_font_italic {
+#ebomatyhrb .gt_font_italic {
   font-style: italic;
 }
 
-#atyhrblykz .gt_super {
+#ebomatyhrb .gt_super {
   font-size: 65%;
 }
 
-#atyhrblykz .gt_footnote_marks {
+#ebomatyhrb .gt_footnote_marks {
   font-style: italic;
   font-size: 65%;
 }
 </style>
-<div id="atyhrblykz" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;"><table class="gt_table">
+<div id="ebomatyhrb" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;"><table class="gt_table">
   
   <thead class="gt_col_headings">
     <tr>
@@ -1194,6 +1230,28 @@ New disease: **Piéchart Disease**&lt;sup&gt;[*]&lt;/sup&gt; 😨😱😨😱�
 .center[
 &lt;img src="01-Introduction_files/figure-html/unnamed-chunk-8-1.png" width="35%" /&gt;
 ]
+
+---
+
+# Simpson's Paradox
+
+.display1[Background] 
+
+- [In 1951](https://rss.onlinelibrary.wiley.com/doi/10.1111/j.2517-6161.1951.tb00088.x), E.H. Simpson published a *famous* article (cited over 2000 times) that described an analysis of 2x2 tables that led to *paradoxical* results. 
+
+--
+
+.display2[What appears to have happened]
+
+- A trend appears in *several different groups*, but disappears (or reverses) when these groups are combined. 
+
+--
+
+.display3[What is *actually* happening]
+
+- The paradox is the result of disregarding the *causal structure* of the research problem [(Hernan et al., 2011)](https://academic.oup.com/ije/article/40/3/780/746837). 
+
+&gt; Once the causal goal is made explicit and causal considerations are incorporated into the analysis, the course of action becomes crystal clear. 
 
 ---
 
@@ -1299,7 +1357,7 @@ Total **association**: mixture of **causal** and **confounding** association
 
 ---
 
-# Potential Outcomes
+# Potential Outcomes/Counterfactuals
 
 **Intuition**
 
@@ -1394,7 +1452,45 @@ Total **association**: mixture of **causal** and **confounding** association
 --
 
 .pull-right.center[
-**Causal Effect**: `\(Y_{i}(1)-\)`❓️
+**Individual Causal Effect** 
+
+`\(Y_{i}(1)-\)`❓️
+]
+
+---
+
+# Fundamental Problem of Causal Inference
+
+.center[
+&lt;img src="emoji_thinking.jpeg" width="86" /&gt;
+]
+
+&gt; [(Holland, 1986)](http://www.cs.columbia.edu/~blei/fogm/2019F/readings/Holland1986.pdf): We only ever observe one realization. 
+
+**If you chose to take STAT 228, you cannot simultaneously *not choose* to take it!**
+
+.pull-left[
+
+.center[
+**Average Causal Effect?**
+
+`\((\bar{Y}\mid T = 1) -(\bar{Y}\mid T = 0)\)`
+
+(i.e., a *difference in means*)
+
+.display2[Can we do this?]
+
+]
+
+]
+
+--
+
+.pull-right.center[
+**Probably not...**
+
+&lt;img src="stat228_confounding.png" width="290" /&gt;
+
 ]
 
 ---
@@ -1512,7 +1608,7 @@ ggdag(example_dag) +
   theme_dag()
 ```
 
-&lt;img src="01-Introduction_files/figure-html/unnamed-chunk-29-1.png" width="100%" /&gt;
+&lt;img src="01-Introduction_files/figure-html/unnamed-chunk-31-1.png" width="100%" /&gt;
 ]
 
 .pull-right[
@@ -1536,7 +1632,7 @@ We'll cover several popular methods for isolating causal pathways throughout the
 .pull-left[
 &lt;p style="text-align: center;"&gt;&lt;b&gt;Ideal (RCT)&lt;/b&gt;&lt;/p&gt;
 
-![](01-Introduction_files/figure-html/unnamed-chunk-30-1.png)&lt;!-- --&gt;
+![](01-Introduction_files/figure-html/unnamed-chunk-32-1.png)&lt;!-- --&gt;
 ]
 
 --
@@ -1544,7 +1640,7 @@ We'll cover several popular methods for isolating causal pathways throughout the
 .pull-right[
 &lt;p style="text-align: center;"&gt;&lt;b&gt;Observational Study&lt;/b&gt;&lt;/p&gt;
 
-![](01-Introduction_files/figure-html/unnamed-chunk-31-1.png)&lt;!-- --&gt;
+![](01-Introduction_files/figure-html/unnamed-chunk-33-1.png)&lt;!-- --&gt;
 ]
 
 --
@@ -1577,11 +1673,31 @@ summary(fit_causal)
 ]
 
 .pull-right[
-![](01-Introduction_files/figure-html/unnamed-chunk-33-1.png)&lt;!-- --&gt;
+![](01-Introduction_files/figure-html/unnamed-chunk-35-1.png)&lt;!-- --&gt;
 ]
 
 - **Note**: *Linear regression* is one way to adjust for confounders, and it comes with its limitations!
 
+
+---
+
+# Goals
+
+.center[
+### Understand the *philosophy* of causation
+
+&lt;br&gt;&lt;/br&gt;
+
+### Design rigorous evaluation strategies
+
+&lt;br&gt;&lt;/br&gt;
+
+### Conduct independent research/lit review
+
+&lt;br&gt;&lt;/br&gt;
+
+### Communication!
+]
 
 ---
 
@@ -1610,15 +1726,13 @@ class: center, middle, frame
 
 # Grades
 
-- **Bi-weekly problem sets [20%]**: Completed in RStudio via *R Markdown*
+- **Problem sets [20%]**: Completed in RStudio via *R Markdown*
 
 - **Seminar/Journal Club Presentation [20%]**: Starting in **Module 4**, students will develop, present, and lead a discussion on a journal article and/or book reading related to the appropriate module.
 
-- **Final Project [30%]**: You will submit a *causal research proposal* on any topic of your choosing and give a short presentation.
+- **Final Project [30%]**: You will submit a *causal research proposal* on a topic of your choosing and give a short presentation.
     
-- **Casual Causal Paper [20%]**: **Two options**, both of which are *self-scheduled*, and you can submit at any point during the semester. :
-    1. Write a review of a published journal article or news article, critically assessing it from a causal analysis standpoint. 
-    2. Write a tutorial blog post on (a) any causal inference method covered in class *that you did not cover in your seminar presentation*, or (b) any method *not* covered in class that you'd like to explore on your own. 
+- **Casual Causal Paper [20%]**: Two *thought papers* (~2 pages each) will be assigned during the semester asking you to take a stance on a prompt, and provide evidence for that stance based on material related to the course.
 
 - **Virtual Class Participation [10%]**
 
@@ -1641,6 +1755,23 @@ class: center, middle, frame
 
 &gt; I am aiming for total flexibility. *We're still in a pandemic and learning in this environment is HARD*. Issues will arise, and that’s ok! Let’s communicate and we can figure out a plan together. **My main goal is to support you and your learning**. 
 
+---
+
+# Schedule
+
+.pull-left[
+.center[
+&lt;img src="STAT391_hex.png" width="385" /&gt;
+]
+]
+
+.pull-right[
+.display1[Part 1:] **R Review** (data visualization, wrangling, regression)
+
+.display2[Part 2:] **Theory of Causal Inference** (potential outcomes, graphical models, randomized trials)
+
+.display3[Part 3:] **Tools and Methods** (matching, weighting, difference-in-differences, regression discontinuity, instrumental variables)
+]
     </textarea>
 <style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
 <script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
