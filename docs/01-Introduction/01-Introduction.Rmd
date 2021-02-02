@@ -366,7 +366,7 @@ knitr::include_graphics("meme.jpg")
 --
 
 .center[
-# .display[Then, what does imply causation?!]
+# .display[Except when it is!]
 ]
 
 ---
@@ -777,27 +777,6 @@ dagify(
 
 - **Note**: *Linear regression* is one way to adjust for confounders, and it comes with its limitations!
 
-
----
-
-# Goals
-
-.center[
-### Understand the *philosophy* of causation
-
-<br></br>
-
-### Design rigorous evaluation strategies
-
-<br></br>
-
-### Conduct independent research/lit review
-
-<br></br>
-
-### Communication!
-]
-
 ---
 
 class: center, middle, frame
@@ -872,4 +851,24 @@ knitr::include_graphics("STAT391_hex.png")
 .display2[Part 2:] **Theory of Causal Inference** (potential outcomes, graphical models, randomized trials)
 
 .display3[Part 3:] **Tools and Methods** (matching, weighting, difference-in-differences, regression discontinuity, instrumental variables)
+]
+
+---
+
+# Goals
+
+.center[
+### Understand the *philosophy* of causation
+
+<br></br>
+
+### Design rigorous evaluation strategies
+
+<br></br>
+
+### Conduct independent research/lit review
+
+<br></br>
+
+### Communication!
 ]
