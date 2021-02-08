@@ -1,0 +1,1305 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>STAT 391: Applied Causal Inference</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Anthony Scotina" />
+    <script src="libs/header-attrs-2.6/header-attrs.js"></script>
+    <link rel="stylesheet" href="my-theme.css" type="text/css" />
+    <link rel="stylesheet" href="my-fonts.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# STAT 391: Applied Causal Inference
+## Data Wrangling
+### Anthony Scotina
+
+---
+
+
+
+
+
+
+
+
+
+&lt;!--
+pagedown::chrome_print("~/Dropbox/Teaching/03-Simmons Courses/MATH228-Introduction to Data Science/Lecture Slides/01-Introduction/01-Introduction.html")
+--&gt;
+
+
+# Topics
+
+- .display1[The S.S. FAM - Five Main Verbs]
+
+&lt;br&gt;&lt;/br&gt;
+
+- .display2[Other Useful Verbs] (.display4[Anthony's Favorite Things])
+
+&lt;br&gt;&lt;/br&gt;
+
+- .display3[Combining Multiple Tables]
+
+---
+
+class: center, middle, frame
+
+# The S.S. FAM
+
+.center[
+&lt;img src="boat.jpg" width="960" /&gt;
+]
+
+---
+
+# Data Wrangling in R? 
+
+**dplyr** (D-plyer, **NOT** *dipler*)
+
+.center[
+&lt;img src="dplyr_hex.png" width="40%" /&gt;
+]
+
+---
+
+# A Grammar for Data Wrangling
+
+Similar to how `ggplot2` provides a *grammar* for **data visualization**... 
+
+- `dplyr` provides a *grammar* for **data transformation**. 
+
+--
+
+**Five verbs for working with data in a data frame**:
+
+- `select()`: take a subset of *columns* (e.g., variables)
+
+- `summarize()` (usually with `group_by()`): aggregate data *across rows* (e.g., grouped means)
+
+- `filter()`: take a subset of *rows* (e.g., observations, cases, individuals)
+
+- `arrange()`: sort rows
+
+- `mutate()`: add or modify *existing columns*
+
+Each of these functions takes a **data frame** (or a `tibble`) as its first argument (similar to `ggplot()`). 
+
+- They are *usually* used in conjunction with each other (e.g., in a *pipeline*). 
+
+---
+
+# Setting the Table
+
+We'll illustrate some *data wrangling* examples using open data on **hotel booking demand** via [TidyTuesday](https://github.com/rfordatascience/tidytuesday/blob/master/data/2020/2020-02-11/readme.md). 
+
+
+```r
+hotels_raw &lt;- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-02-11/hotels.csv')
+```
+
+.display2[Our **causal** question]: 
+
+- What impact does assigning a room *different to what a customer had reserved* have on whether the booking was *canceled*?
+
+--
+
+.pull-left[
+*T*: Different room assigned? 
+- (`0` = "No", `1` = "Yes")
+
+*Y*: Booking canceled? 
+- (`0` = "No", `1` = "Yes")
+
+*C*: Possible **confounders** 
+- 🤔
+]
+
+.pull-right[
+![](02-Data_Wrangling_files/figure-html/unnamed-chunk-6-1.png)&lt;!-- --&gt;
+
+]
+
+---
+
+# `select()` columns
+
+.center[
+&lt;img src="dplyr_select.png" width="359" /&gt;
+]
+
+`select()` allows you to return a *subset* of **columns** of a data frame. 
+
+- This might not seem like much, but data frames with *many* columns (i.e., hundreds of variables, or even 32!) are not uncommon. 
+
+---
+
+# `select()` columns
+
+The `hotels_raw` dataset has *32* columns. While these each hold some potentially useful piece of information, `select()` can help us pare down the columns to a simpler amount:
+
+
+```r
+hotels = hotels_raw %&gt;%
+  select(hotel, is_canceled, reserved_room_type, assigned_room_type, 
+         booking_changes, lead_time, country, previous_cancellations, 
+         stays_in_week_nights, stays_in_weekend_nights, arrival_date_month)
+```
+
+--
+
+.display1[A few notes]:
+
+- I *strongly recommend* NOT overwriting the raw dataset - use a different name!
+
+- Order matters in `select()`: The order in which you list columns is the order in which they'll appear!
+
+---
+
+# `summarize()` with `group_by()`
+
+Four of the *S.S. FAM* verbs all provide different ways to **manipulate** a data frame. 
+
+- `select()`, `filter()`, `arrange()`, `mutate()`
+
+- The extent of the analysis we can perform *solely by manipulating a data frame* is limited. 
+
+--
+
+`summarize()` and `group_by()` allow us to make calculations and *comparisons*. 
+
+- `summarize()` (with or without `group_by()`) collapses the data into rows based on **summary statistics**. 
+
+.center[
+&lt;img src="dplyr_summarize.png" width="342" /&gt;
+]
+
+---
+
+# `summarize()`
+
+The important step in `summarize()` is specifying **how** we want to reduce the data to a single set of summary statistics. 
+- **Examples**: `mean()`, `sd()`, `median()`, `IQR()`, `max()`, `n()`, and many more
+
+Let's calculate the **proportion** of *cancellations*...
+
+(i) .display1[overall]
+
+(ii) .display2[by hotel type]
+
+--
+
+👇 .display1[overall] 👇
+
+
+```r
+hotels_raw %&gt;%
+  summarize(n_bookings = n(), 
+            prop_cancellations = sum(is_canceled)/n())
+```
+
+```
+## # A tibble: 1 x 2
+##   n_bookings prop_cancellations
+##        &lt;int&gt;              &lt;dbl&gt;
+## 1     119390              0.370
+```
+
+---
+
+# `summarize()`
+
+The important step in `summarize()` is specifying **how** we want to reduce the data to a single set of summary statistics. 
+- **Examples**: `mean()`, `sd()`, `median()`, `IQR()`, `max()`, `n()`, and many more
+
+Let's calculate the **proportion** of *cancellations*...
+
+(i) .display1[overall]
+
+(ii) .display2[by hotel type]
+
+👇 .display2[by hotel type] 👇
+
+
+```r
+hotels_raw %&gt;%
+* group_by(hotel) %&gt;%
+  summarize(n_bookings = n(), 
+            prop_cancellations = sum(is_canceled)/n())
+```
+
+```
+## # A tibble: 2 x 3
+##   hotel        n_bookings prop_cancellations
+##   &lt;chr&gt;             &lt;int&gt;              &lt;dbl&gt;
+## 1 City Hotel        79330              0.417
+## 2 Resort Hotel      40060              0.278
+```
+
+---
+
+# `filter()` rows
+
+While `select()` is useful in cutting out unwanted columns (especially if there are *many* columns), we might still need to perform other operations on the data. 
+
+.center[
+&lt;img src="dplyr_filter.png" width="412" /&gt;
+]
+
+`filter()` allows you to return a *subset* of **rows** of a data frame. 
+
+- Specify criteria about the values of a variables in your dataset.
+
+- `filter()` out only those rows that match that criteria.
+
+---
+
+# `filter()` rows
+
+Let's obtain booking data for *only the reservations in June, July, or August*:
+
+
+```r
+hotels_resort = hotels_raw %&gt;%
+  filter(arrival_date_month %in% c("June", "July", "August"))
+```
+
+**Note**: We use the `%in%` to check for rows with `arrival_date_month` equal to *either* `"June"`, `"July"`, or `"August"`
+
+---
+
+# `select()` and `filter()` together
+
+Similar to when using *only* `select()`, we might want to perform other operations on the data in conjunction with `filter()`. 
+
+- We can conveniently construct a single *pipeline* with all of the operations!
+
+
+```r
+hotels_resort = hotels_raw %&gt;%
+  select(hotel, is_canceled, reserved_room_type, assigned_room_type, 
+         booking_changes, lead_time, country, previous_cancellations, 
+         stays_in_week_nights, stays_in_weekend_nights, arrival_date_month) %&gt;%
+  filter(arrival_date_month %in% c("June", "July", "August"))
+```
+
+--
+
+You can even add a plot at the end of a pipeline!
+
+
+```r
+hotels_raw %&gt;%
+  select(hotel, is_canceled, reserved_room_type, assigned_room_type, 
+         booking_changes, lead_time, country, previous_cancellations, 
+         stays_in_week_nights, stays_in_weekend_nights, arrival_date_month) %&gt;%
+  filter(arrival_date_month %in% c("June", "July", "August")) %&gt;%
+  ggplot(aes(x = stays_in_week_nights)) + 
+  geom_histogram(binwidth = 2, color = "white") + 
+  facet_wrap(~ hotel)
+```
+
+---
+
+# `arrange()` rows
+
+The `arrange()` function will *sort the rows* of a data frame by a pre-specified *column*. 
+
+.center[
+&lt;img src="dplyr_arrange.png" width="228" /&gt;
+]
+
+While we can do this as an *exploratory* step in the `View()` window, `arrange()` allows us to perform additional operations on a custom-sorted data frame. 
+
+---
+
+# `arrange()` rows
+
+When we run this code:
+
+
+```r
+hotels_raw %&gt;%
+*   group_by(arrival_date_month) %&gt;%
+    summarize(n_bookings = n(), 
+              n_canceled = sum(is_canceled),
+              prop_cancellations = sum(is_canceled)/n())
+```
+
+The `arrival_date_month` column in the summary table is arranged *alphabetically*. 
+
+- This is usually the default setting with *characters* in R
+
+--
+
+Let's `arrange()` this table in *descending* order by `prop_cancellations`:
+
+
+```r
+hotels_raw %&gt;%
+    group_by(arrival_date_month) %&gt;% 
+    summarize(n_bookings = n(), 
+              n_canceled = sum(is_canceled),
+              prop_cancellations = sum(is_canceled)/n()) %&gt;%
+  arrange(desc(prop_cancellations))
+```
+
+---
+
+# `mutate()` existing columns
+
+`mutate()` is a function that defines and inserts *new variables* into a data frame as *columns*. 
+
+.center[
+&lt;img src="dplyr_mutate.png" width="529" /&gt;
+]
+
+---
+
+# `mutate()` existing columns
+
+*Now* we can address our **causal** question further:
+
+- What impact does assigning a room *different to what a customer had reserved* have on whether the booking was *canceled*?
+
+.display3[Two relevant columns for the "treatment"]:
+
+
+```r
+hotels_raw %&gt;%
+  select(reserved_room_type, assigned_room_type) %&gt;%
+  head()
+```
+
+```
+## # A tibble: 6 x 2
+##   reserved_room_type assigned_room_type
+##   &lt;chr&gt;              &lt;chr&gt;             
+## 1 C                  C                 
+## 2 C                  C                 
+## 3 A                  C                 
+## 4 A                  A                 
+## 5 A                  A                 
+## 6 A                  A
+```
+
+
+Using `reserved_room_type` and `assigned_room_type`, we can *create* a new `is_reservation_changed` variable by checking each row for *equality*. 
+
+---
+
+# `mutate()` existing columns
+
+Using `reserved_room_type` and `assigned_room_type`, we can *create* a new `is_reservation_changed` variable by checking each row for *equality*. 
+
+
+```r
+hotels = hotels_raw %&gt;%
+  mutate(is_reservation_changed = 
+           (reserved_room_type != assigned_room_type))
+hotels %&gt;%
+  select(reserved_room_type, assigned_room_type, is_reservation_changed) %&gt;%
+  head()
+```
+
+```
+## # A tibble: 6 x 3
+##   reserved_room_type assigned_room_type is_reservation_changed
+##   &lt;chr&gt;              &lt;chr&gt;              &lt;lgl&gt;                 
+## 1 C                  C                  FALSE                 
+## 2 C                  C                  FALSE                 
+## 3 A                  C                  TRUE                  
+## 4 A                  A                  FALSE                 
+## 5 A                  A                  FALSE                 
+## 6 A                  A                  FALSE
+```
+
+**Note**: `(reserved_room_type != assigned_room_type)` checks a *logical condition* for each row, and therefore returns either a `TRUE` or `FALSE` value. 
+
+---
+
+# One Giant Pipeline
+
+Let's use all components of the S.S FAM in one pipeline!
+
+
+```r
+hotels_raw %&gt;%
+  mutate(is_reservation_changed = 
+           (reserved_room_type != assigned_room_type)) %&gt;%
+  select(hotel, is_reservation_changed, is_canceled, reserved_room_type, 
+         assigned_room_type, booking_changes, lead_time, country, 
+         previous_cancellations, stays_in_week_nights, 
+         stays_in_weekend_nights, arrival_date_month) %&gt;%
+  filter(arrival_date_month %in% c("June", "July", "August")) %&gt;%
+  group_by(is_reservation_changed) %&gt;%
+  summarize(n_bookings = n(), 
+            n_canceled = sum(is_canceled),
+            prop_cancellations = sum(is_canceled)/n())
+```
+
+```
+## # A tibble: 2 x 4
+##   is_reservation_changed n_bookings n_canceled prop_cancellations
+##   &lt;lgl&gt;                       &lt;int&gt;      &lt;dbl&gt;              &lt;dbl&gt;
+## 1 FALSE                       34317      14368             0.419 
+## 2 TRUE                         3160        148             0.0468
+```
+
+---
+
+# Confounders?!
+
+
+```r
+hotels_raw %&gt;%
+  mutate(is_reservation_changed = 
+           (reserved_room_type != assigned_room_type)) %&gt;%
+  group_by(is_reservation_changed) %&gt;%
+  summarize(mean_booking_changes = mean(booking_changes))
+```
+
+```
+## # A tibble: 2 x 2
+##   is_reservation_changed mean_booking_changes
+##   &lt;lgl&gt;                                 &lt;dbl&gt;
+## 1 FALSE                                 0.198
+## 2 TRUE                                  0.383
+```
+
+
+```r
+hotels_raw %&gt;%
+    group_by(is_canceled) %&gt;%
+    summarize(mean_booking_changes = mean(booking_changes))
+```
+
+```
+## # A tibble: 2 x 2
+##   is_canceled mean_booking_changes
+##         &lt;dbl&gt;                &lt;dbl&gt;
+## 1           0               0.293 
+## 2           1               0.0983
+```
+
+---
+
+# Confounders?!
+
+
+```r
+hotels_raw %&gt;%
+  mutate(is_reservation_changed = 
+           (reserved_room_type != assigned_room_type)) %&gt;%
+  group_by(is_reservation_changed) %&gt;%
+  summarize(mean_lead_time = mean(lead_time))
+```
+
+```
+## # A tibble: 2 x 2
+##   is_reservation_changed mean_lead_time
+##   &lt;lgl&gt;                           &lt;dbl&gt;
+## 1 FALSE                           110. 
+## 2 TRUE                             63.8
+```
+
+
+```r
+hotels_raw %&gt;%
+  mutate(is_reservation_changed = 
+           (reserved_room_type != assigned_room_type)) %&gt;%
+  group_by(is_canceled) %&gt;%
+  summarize(mean_lead_time = mean(lead_time))
+```
+
+```
+## # A tibble: 2 x 2
+##   is_canceled mean_lead_time
+##         &lt;dbl&gt;          &lt;dbl&gt;
+## 1           0           80.0
+## 2           1          145.
+```
+
+---
+
+# The S.S. FAM
+
+.pull-left[
+- `select()`: choose columns by name
+
+- `summarize()` (usually with `group_by()`): reduce variables to summary values
+
+- `filter()`: pick a subset of rows matching criteria
+
+- `arrange()`: reorder rows
+
+- `mutate()`: add new variables
+]
+
+.pull-right[
+&lt;img src="boat.jpg" width="4000" /&gt;
+]
+
+---
+
+class: center, middle, frame
+
+# Other Useful Verbs
+
+## Anthony's Favorite Things
+
+---
+
+# `case_when()`
+
+From `?case_when`:
+
+&gt; This function allows you to vectorise multiple `if_else()` statements. 
+
+--
+
+Let's create a new `season` variable:
+
+- If `arrival_date_month %in% c("December", "January", "February")`, then `season = "Winter"`
+
+- If `arrival_date_month %in% c("March", "April", "May")`, then `season = "Spring"`
+
+- If `arrival_date_month %in% c("June", "July", "August")`, then `season = "Summer"`
+
+- If `arrival_date_month %in% c("September", "October", "November")`, then `season = "Fall"`
+
+---
+
+# `case_when()`
+
+From `?case_when`:
+
+&gt; This function allows you to vectorise multiple `if_else()` statements. 
+
+Let's create a new `season` variable:
+
+
+```r
+hotels = hotels_raw %&gt;%
+  mutate(season = 
+           case_when(arrival_date_month %in% c("December", "January", "February") ~ "Winter", 
+                     arrival_date_month %in% c("March", "April", "May") ~ "Spring", 
+                     arrival_date_month %in% c("June", "July", "August") ~ "Summer", 
+                     arrival_date_month %in% c("September", "October", "November") ~ "Fall"))
+
+hotels %&gt;%
+  group_by(season) %&gt;%
+  summarize(prop_cancellations = sum(is_canceled)/n())
+```
+
+```
+## # A tibble: 4 x 2
+##   season prop_cancellations
+##   &lt;chr&gt;               &lt;dbl&gt;
+## 1 Fall                0.368
+## 2 Spring              0.378
+## 3 Summer              0.387
+## 4 Winter              0.331
+```
+
+---
+
+# The `slice_()` Family
+
+Index **rows** by their *integer* location. 
+
+Let's find the **top 3** most expensive *average daily rates* (`adr`) per `hotel` type:
+
+
+```r
+hotels %&gt;%
+  group_by(hotel) %&gt;%
+  slice_max(adr, n = 3) %&gt;%
+  select(hotel, adr)
+```
+
+```
+## # A tibble: 6 x 2
+## # Groups:   hotel [2]
+##   hotel          adr
+##   &lt;chr&gt;        &lt;dbl&gt;
+## 1 City Hotel   5400 
+## 2 City Hotel    510 
+## 3 City Hotel    452.
+## 4 Resort Hotel  508 
+## 5 Resort Hotel  450 
+## 6 Resort Hotel  437
+```
+
+- **Note**: This replaces the `top_n()` function, which has been *superseded*. 
+
+---
+
+# `sample_n()`
+
+Sample *n* rows from a table. 
+
+.display2[Good for...]
+
+- displaying a *data preview*
+
+- downsampling to show examples on a smaller dataset
+
+
+```r
+set.seed(391)
+hotels_raw %&gt;%
+  sample_n(size = 5) %&gt;%
+  select(hotel, stays_in_weekend_nights, adults, children, arrival_date_month)
+```
+
+```
+## # A tibble: 5 x 5
+##   hotel        stays_in_weekend_nights adults children arrival_date_month
+##   &lt;chr&gt;                          &lt;dbl&gt;  &lt;dbl&gt;    &lt;dbl&gt; &lt;chr&gt;             
+## 1 City Hotel                         0      2        2 July              
+## 2 City Hotel                         0      2        0 December          
+## 3 Resort Hotel                       1      2        0 January           
+## 4 Resort Hotel                       2      2        0 July              
+## 5 Resort Hotel                       0      2        1 August
+```
+
+**Note**: `sample_n()` was recently superseded by `slice_sample()`, but I'm *very* used to it...
+
+---
+
+# `across()`
+
+This is a .display2[NEW] function! 🤩🤩🤩
+
+- Apply a function (or more than one function) **across** multiple columns. 
+
+
+```r
+spotify_songs &lt;- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-01-21/spotify_songs.csv')
+
+spotify_songs %&gt;%
+  group_by(playlist_genre) %&gt;%
+  summarize(across(danceability:acousticness, 
+                   list(mean = mean)))
+```
+
+```
+## # A tibble: 6 x 8
+##   playlist_genre danceability_me… energy_mean key_mean loudness_mean mode_mean
+##   &lt;chr&gt;                     &lt;dbl&gt;       &lt;dbl&gt;    &lt;dbl&gt;         &lt;dbl&gt;     &lt;dbl&gt;
+## 1 edm                       0.655       0.802     5.35         -5.43     0.520
+## 2 latin                     0.713       0.708     5.48         -6.26     0.562
+## 3 pop                       0.639       0.701     5.32         -6.32     0.588
+## 4 r&amp;b                       0.670       0.591     5.40         -7.86     0.521
+## 5 rap                       0.718       0.651     5.47         -7.04     0.521
+## 6 rock                      0.521       0.733     5.21         -7.59     0.700
+## # … with 2 more variables: speechiness_mean &lt;dbl&gt;, acousticness_mean &lt;dbl&gt;
+```
+
+---
+
+# `across()` with `_with()`
+
+Be **lazy** and use `ends_with("ness")` instead of listing out...
+
+- `loudness`
+- `speechiness`
+- `acousticness`
+- `instrumentalness`
+- `liveness`
+
+
+```r
+spotify_songs %&gt;%
+  group_by(playlist_genre) %&gt;%
+  summarize(across(ends_with("ness"), mean))
+```
+
+```
+## # A tibble: 6 x 6
+##   playlist_genre loudness speechiness acousticness instrumentalness liveness
+##   &lt;chr&gt;             &lt;dbl&gt;       &lt;dbl&gt;        &lt;dbl&gt;            &lt;dbl&gt;    &lt;dbl&gt;
+## 1 edm               -5.43      0.0867       0.0815           0.219     0.212
+## 2 latin             -6.26      0.103        0.211            0.0444    0.181
+## 3 pop               -6.32      0.0740       0.171            0.0599    0.177
+## 4 r&amp;b               -7.86      0.117        0.260            0.0289    0.175
+## 5 rap               -7.04      0.198        0.192            0.0760    0.192
+## 6 rock              -7.59      0.0577       0.145            0.0624    0.203
+```
+
+---
+
+# `relocate()`
+
+Be **lazy** and use `relocate()` instead of having to `select()` all over again!
+
+
+```r
+hotels = hotels_raw %&gt;%
+  select(hotel, is_canceled, reserved_room_type, assigned_room_type, 
+         booking_changes, lead_time, country, previous_cancellations, 
+         stays_in_week_nights, stays_in_weekend_nights, arrival_date_month)
+```
+
+- But I want `hotel` later on, and `arrival_date_month` earlier!
+
+--
+
+
+```r
+hotels = hotels %&gt;%
+  relocate(hotel, .after = assigned_room_type,) %&gt;%
+  relocate(arrival_date_month, .before = is_canceled)
+
+names(hotels)
+```
+
+```
+##  [1] "arrival_date_month"      "is_canceled"            
+##  [3] "reserved_room_type"      "assigned_room_type"     
+##  [5] "hotel"                   "booking_changes"        
+##  [7] "lead_time"               "country"                
+##  [9] "previous_cancellations"  "stays_in_week_nights"   
+## [11] "stays_in_weekend_nights"
+```
+
+---
+
+# `count()`
+
+`count()` is probably my **favorite** function of *all time*! 
+
+- It's so simple, but **SO** useful. 
+
+
+```r
+spotify_songs %&gt;% 
+  count(playlist_subgenre)
+```
+
+```
+## # A tibble: 24 x 2
+##    playlist_subgenre     n
+##    &lt;chr&gt;             &lt;int&gt;
+##  1 album rock         1065
+##  2 big room           1206
+##  3 classic rock       1296
+##  4 dance pop          1298
+##  5 electro house      1511
+##  6 electropop         1408
+##  7 gangster rap       1458
+##  8 hard rock          1485
+##  9 hip hop            1322
+## 10 hip pop            1256
+## # … with 14 more rows
+```
+
+---
+
+# `count()`
+
+`count()` is probably my **favorite** function of *all time*! 
+
+- It's so simple, but **SO** useful. 
+
+
+```r
+spotify_songs %&gt;% 
+* count(playlist_subgenre, sort = TRUE)
+```
+
+```
+## # A tibble: 24 x 2
+##    playlist_subgenre             n
+##    &lt;chr&gt;                     &lt;int&gt;
+##  1 progressive electro house  1809
+##  2 southern hip hop           1675
+##  3 indie poptimism            1672
+##  4 latin hip hop              1656
+##  5 neo soul                   1637
+##  6 pop edm                    1517
+##  7 electro house              1511
+##  8 hard rock                  1485
+##  9 gangster rap               1458
+## 10 electropop                 1408
+## # … with 14 more rows
+```
+
+---
+
+# `count()`
+
+`count()` is probably my **favorite** function of *all time*! 
+
+- It's so simple, but **SO** useful. 
+
+
+```r
+spotify_songs %&gt;% 
+  count(playlist_subgenre, sort = TRUE) 
+```
+
+The result is pretty self-explanatory. `count()` returns a *count* of rows **by group**. 
+
+- It performs the *same function* that `group_by(playlist_subgenre) %&gt;% summarize(n = n())` would!
+
+`count()` is **very** useful when you're working with a large number of categories and want a brief snapshot of their representation in a dataset. 
+
+- **Note**: `add_count()` returns the original dataset with the `n` column added!
+
+---
+
+# `count()`
+
+`count()` is probably my **favorite** function of *all time*! 
+
+- You could also pipe the results from `count()` into a `geom_col()` bar graph:
+
+.pull-left[
+
+```r
+spotify_songs %&gt;% 
+  count(playlist_subgenre) %&gt;%
+  ggplot(aes(x = playlist_subgenre, 
+             y = n)) + 
+  geom_col() + 
+  coord_flip() + 
+  labs(x = "", y = "Count") +
+  theme_minimal()
+```
+]
+
+.pull-right[
+![](02-Data_Wrangling_files/figure-html/unnamed-chunk-39-1.png)&lt;!-- --&gt;
+]
+
+---
+
+# `fct_reorder()`
+
+Unless there's a *good reason*, bar graphs should *probably* be arranged in ascending or descending order.
+
+- `fct_reorder()`, when used after `count()` (or `summarize()`) can help with that!
+
+.pull-left[
+
+```r
+spotify_songs %&gt;% 
+  count(playlist_subgenre) %&gt;%
+  ggplot(aes(x = fct_reorder(playlist_subgenre, n),
+             y = n)) + 
+  geom_col() + 
+  coord_flip() + 
+  labs(x = "", y = "Count") +
+  theme_minimal()
+```
+]
+
+.pull-right[
+![](02-Data_Wrangling_files/figure-html/unnamed-chunk-41-1.png)&lt;!-- --&gt;
+]
+
+---
+
+# `fct_lump()`
+
+`fct_lump()` (and `fct_reorder()`) are from the `{forcats}` package - they're very helpful when dealing with **factors**!
+
+- `fct_lump()` **lumps** together multiple levels within a **factor**. 
+
+
+```r
+spotify_songs %&gt;% 
+  mutate(playlist_subgenre = fct_lump(playlist_subgenre, 8)) %&gt;%
+  count(playlist_subgenre) %&gt;%
+  ggplot(aes(x = fct_reorder(playlist_subgenre, n),
+             y = n)) + 
+  geom_col() + 
+  coord_flip() + 
+  labs(x = "", y = "Count") +
+  theme_minimal()
+```
+
+---
+
+class: center, middle, frame
+
+# Combining Multiple Tables
+
+---
+
+# Combining Multiple Tables
+
+So far we have been working with *single data frames*, which are reminiscent of single *spreadsheets/tables*. 
+
+- However, many data projects contain *multiple tables* used together. 
+
+- Luckily, `dplyr` gives efficient means to work with multiple tables. 
+
+--
+
+One family of verbs that we will use to work with multiple tables is called **mutating joins**. 
+
+- These add new variables to one data frame from *matching observations* in another
+
+(i) `inner_join()`
+
+(ii) `full_join()`
+
+(iii) `left_join()` and `right_join()`
+
+(iv) `anti_join()`
+
+---
+
+# `inner_join()`
+
+`inner_join()` joins together multipletables, keeping **only** rows with matching "key" variable names. 
+
+- Let's look at **several** data tables on [college tuition, diversity, and pay](https://github.com/rfordatascience/tidytuesday/blob/master/data/2020/2020-03-10/readme.md):
+
+
+```r
+tuition_cost &lt;- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-03-10/tuition_cost.csv')
+salary_potential &lt;- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-03-10/salary_potential.csv')
+diversity_school &lt;- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-03-10/diversity_school.csv')
+```
+
+--
+
+A matching column between `tuition_cost` and `salary_potential` is `name` (the **name** of the school). 
+
+- But one dataset has *more* **unique** schools than the other!
+
+
+```r
+length(unique(tuition_cost$name))
+```
+
+```
+## [1] 2938
+```
+
+```r
+length(unique(salary_potential$name))
+```
+
+```
+## [1] 934
+```
+
+---
+
+# `inner_join()`
+
+We can use `inner_join()` to join together the `tuition_cost` and `salary_potential` tables, using `name` as a **key**. 
+
+- But this will also remove *any* rows from **EITHER** table that don't share a matching key. 
+
+
+```r
+college_tuition_salary_inner = tuition_cost %&gt;%
+  inner_join(salary_potential, by = "name")
+
+length(unique(college_tuition_salary_inner$name))
+```
+
+```
+## [1] 724
+```
+
+---
+
+# `full_join()`
+
+`full_join()` works similarly to `inner_join()`, it just doesn't remove *any* rows. 
+
+- If any rows from either table **DO NOT** share a matching key, those will still be included with `NA` values under the columns from the *other* table. 
+
+
+```r
+college_tuition_salary_full = tuition_cost %&gt;%
+  full_join(salary_potential, by = "name")
+
+length(unique(college_tuition_salary_full$name))
+```
+
+```
+## [1] 3148
+```
+
+One could use **imputation** techniques (for example) to fill in the *missing values*. 
+
+---
+
+# `left_join()`
+
+We use `left_join()` when we want to include **all** rows in one table (the "left" table), and *only* rows in the other table with a matching "key" variable. 
+
+- `right_join()` works similarly, just in the other direction. 
+
+
+```r
+college_tuition_salary_left = tuition_cost %&gt;%
+  left_join(salary_potential, by = "name")
+
+length(unique(tuition_cost$name))
+```
+
+```
+## [1] 2938
+```
+
+```r
+length(unique(college_tuition_salary_left$name))
+```
+
+```
+## [1] 2938
+```
+
+---
+
+# `right_join()`
+
+We use `right_join()` when we want to include **all** rows in one table (the "right" table), and *only* rows in the other table with a matching "key" variable. 
+
+- `left_join()` works similarly, just in the other direction. 
+
+
+```r
+college_tuition_salary_right = tuition_cost %&gt;%
+  right_join(salary_potential, by = "name")
+
+length(unique(salary_potential$name))
+```
+
+```
+## [1] 934
+```
+
+```r
+length(unique(college_tuition_salary_right$name))
+```
+
+```
+## [1] 934
+```
+
+
+---
+
+# `anti_join()`
+
+To be honest, I haven't used this one very much...it's basically the *opposite* of `inner_join()`. 
+
+- `anti_join()` returns all rows from one table **without** a match in the other table. 
+
+--
+
+**Taylor Swift lyrics**
+
+
+```r
+taylor_swift_lyrics &lt;- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-09-29/taylor_swift_lyrics.csv')
+```
+
+We'll use `anti_join()` to **remove** *stop words* from Taylor Swift's songs. 
+
+---
+
+# `anti_join()`
+
+
+```r
+library(tidytext)
+# The 'stop_words' dataset is built-in
+
+tidy_swift = taylor_swift_lyrics %&gt;%
+  unnest_tokens(word, Lyrics)
+
+head(tidy_swift)
+```
+
+```
+## # A tibble: 6 x 4
+##   Artist       Album        Title      word 
+##   &lt;chr&gt;        &lt;chr&gt;        &lt;chr&gt;      &lt;chr&gt;
+## 1 Taylor Swift Taylor Swift Tim McGraw he   
+## 2 Taylor Swift Taylor Swift Tim McGraw said 
+## 3 Taylor Swift Taylor Swift Tim McGraw the  
+## 4 Taylor Swift Taylor Swift Tim McGraw way  
+## 5 Taylor Swift Taylor Swift Tim McGraw my   
+## 6 Taylor Swift Taylor Swift Tim McGraw blue
+```
+
+---
+
+# `anti_join()`
+
+
+```r
+tidy_swift_anti = tidy_swift %&gt;%
+* anti_join(stop_words, by = "word")
+
+head(tidy_swift_anti)
+```
+
+```
+## # A tibble: 6 x 4
+##   Artist       Album        Title      word   
+##   &lt;chr&gt;        &lt;chr&gt;        &lt;chr&gt;      &lt;chr&gt;  
+## 1 Taylor Swift Taylor Swift Tim McGraw blue   
+## 2 Taylor Swift Taylor Swift Tim McGraw eyes   
+## 3 Taylor Swift Taylor Swift Tim McGraw shinx  
+## 4 Taylor Swift Taylor Swift Tim McGraw georgia
+## 5 Taylor Swift Taylor Swift Tim McGraw stars  
+## 6 Taylor Swift Taylor Swift Tim McGraw shame
+```
+
+---
+
+# Which words does T. Swift say the most?
+
+
+```r
+tidy_swift_anti %&gt;%
+  count(word, sort = TRUE) %&gt;% 
+  slice_max(n, n = 10) %&gt;%
+  ggplot(aes(x = fct_reorder(word, n), y = n)) + 
+  geom_col() + 
+  labs(x = "", y = "Count", 
+       title = "Which words does Taylor Swift LOVE the most?") +
+  coord_flip() + 
+  theme_minimal()
+```
+
+![](02-Data_Wrangling_files/figure-html/unnamed-chunk-52-1.png)&lt;!-- --&gt;
+
+
+
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"countIncrementalSlides": false,
+"highlightLines": true
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
