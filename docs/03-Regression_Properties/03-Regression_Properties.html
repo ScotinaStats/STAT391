@@ -1,0 +1,1257 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>STAT 391: Applied Causal Inference</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Anthony Scotina" />
+    <script src="libs/header-attrs-2.6/header-attrs.js"></script>
+    <link rel="stylesheet" href="my-theme.css" type="text/css" />
+    <link rel="stylesheet" href="my-fonts.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# STAT 391: Applied Causal Inference
+## Properties of Regression
+### Anthony Scotina
+
+---
+
+
+
+
+
+
+&lt;!--
+pagedown::chrome_print("~/Dropbox/Teaching/03-Simmons Courses/MATH228-Introduction to Data Science/Lecture Slides/01-Introduction/01-Introduction.html")
+--&gt;
+
+class: center, middle, frame
+
+# Components of the Model
+
+---
+
+# The Essentials
+
+.pull-left.center[
+# Y
+
+### Response Variable
+
+### Outcome Variable
+
+### Dependent Variable
+
+*This is the thing you want to predict or model!*
+]
+
+--
+
+.pull-right.center[
+# X
+
+### Predictor Variable
+
+### Explanatory Variable
+
+### Independent Variable
+
+*This is the thing you use to predict or model **Y**!*
+]
+
+---
+
+# Examples
+
+**Identify Y and X in each!**
+
+1. .display1[A study examines the effect of second-line treatment on risk of cardiovascular disease in patients with type 2 diabetes.] 
+
+2. .display2[Netflix uses your past viewing history, the day of the week, and the time of the day to guess which show you want to watch next.]
+
+3. .display3[Provider profiling involves, for example, estimating the effect of different skilled nursing facilities (SNFs) on 30-day rehospitalization rate.]
+
+---
+
+# Two Purposes of Regression
+
+.pull-left.center[
+# Prediction
+
+### Forecast the future
+
+### Focus is on Y
+
+*Researchers predict the risk of CVD on a 70 year-old male T2D patient with high cholesterol taking metformin and gliclazide*.
+
+]
+
+--
+
+.pull-right.center[
+# Explanation
+
+### Explain the EFFECT of X on Y
+
+### Focus is on X
+
+*Netflix looks at the effect of the time of day on show selection*
+]
+
+---
+
+# How can we do this?
+
+For example...
+
+## Ordinary Least Squares (OLS)
+
+--
+
+1. **Exploratory Data Analysis**
+    - Plot **X** and **Y**
+    - Draw a **line** that *approximates* the relationship
+    
+2. Find the **equation** for the line.
+
+3. **Interpret**
+
+4. Profit 🤑🤑🤑
+
+---
+
+# Let's go to the movies!
+
+What is the *causal effect* of `GDP per capita` on IMDb `happiness`?
+- We'll use data from the 2019 [World Happiness Report](https://worldhappiness.report/), downloaded from **Kaggle**.
+
+
+```r
+world_happiness &lt;- read_csv("2019.csv")
+```
+
+
+```r
+set.seed(391) # To get same sampled rows every time
+world_happiness %&gt;%
+  sample_n(5) %&gt;%
+  gt::gt()
+```
+
+<style>html {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif;
+}
+
+#qyzcbniyiy .gt_table {
+  display: table;
+  border-collapse: collapse;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333333;
+  font-size: 16px;
+  font-weight: normal;
+  font-style: normal;
+  background-color: #FFFFFF;
+  width: auto;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
+
+#qyzcbniyiy .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#qyzcbniyiy .gt_title {
+  color: #333333;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
+
+#qyzcbniyiy .gt_subtitle {
+  color: #333333;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 0;
+  padding-bottom: 4px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
+
+#qyzcbniyiy .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#qyzcbniyiy .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#qyzcbniyiy .gt_col_heading {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#qyzcbniyiy .gt_column_spanner_outer {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#qyzcbniyiy .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#qyzcbniyiy .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#qyzcbniyiy .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#qyzcbniyiy .gt_group_heading {
+  padding: 8px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#qyzcbniyiy .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#qyzcbniyiy .gt_from_md > :first-child {
+  margin-top: 0;
+}
+
+#qyzcbniyiy .gt_from_md > :last-child {
+  margin-bottom: 0;
+}
+
+#qyzcbniyiy .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#qyzcbniyiy .gt_stub {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 12px;
+}
+
+#qyzcbniyiy .gt_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#qyzcbniyiy .gt_first_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+}
+
+#qyzcbniyiy .gt_grand_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#qyzcbniyiy .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#qyzcbniyiy .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#qyzcbniyiy .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#qyzcbniyiy .gt_footnotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#qyzcbniyiy .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding: 4px;
+}
+
+#qyzcbniyiy .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#qyzcbniyiy .gt_sourcenote {
+  font-size: 90%;
+  padding: 4px;
+}
+
+#qyzcbniyiy .gt_left {
+  text-align: left;
+}
+
+#qyzcbniyiy .gt_center {
+  text-align: center;
+}
+
+#qyzcbniyiy .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#qyzcbniyiy .gt_font_normal {
+  font-weight: normal;
+}
+
+#qyzcbniyiy .gt_font_bold {
+  font-weight: bold;
+}
+
+#qyzcbniyiy .gt_font_italic {
+  font-style: italic;
+}
+
+#qyzcbniyiy .gt_super {
+  font-size: 65%;
+}
+
+#qyzcbniyiy .gt_footnote_marks {
+  font-style: italic;
+  font-size: 65%;
+}
+</style>
+<div id="qyzcbniyiy" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;"><table class="gt_table">
+  
+  <thead class="gt_col_headings">
+    <tr>
+      <th class="gt_col_heading gt_columns_bottom_border gt_right" rowspan="1" colspan="1">Overall_rank</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1">Country_or_region</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_right" rowspan="1" colspan="1">Score</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_right" rowspan="1" colspan="1">GDP_per_capita</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_right" rowspan="1" colspan="1">Social_support</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_right" rowspan="1" colspan="1">Healthy_life_expectancy</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_right" rowspan="1" colspan="1">Freedom_life_choices</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_right" rowspan="1" colspan="1">Generosity</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_right" rowspan="1" colspan="1">Perceptions_of_corruption</th>
+    </tr>
+  </thead>
+  <tbody class="gt_table_body">
+    <tr>
+      <td class="gt_row gt_right">68</td>
+      <td class="gt_row gt_left">Russia</td>
+      <td class="gt_row gt_right">5.648</td>
+      <td class="gt_row gt_right">1.183</td>
+      <td class="gt_row gt_right">1.452</td>
+      <td class="gt_row gt_right">0.726</td>
+      <td class="gt_row gt_right">0.334</td>
+      <td class="gt_row gt_right">0.082</td>
+      <td class="gt_row gt_right">0.031</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_right">100</td>
+      <td class="gt_row gt_left">Nepal</td>
+      <td class="gt_row gt_right">4.913</td>
+      <td class="gt_row gt_right">0.446</td>
+      <td class="gt_row gt_right">1.226</td>
+      <td class="gt_row gt_right">0.677</td>
+      <td class="gt_row gt_right">0.439</td>
+      <td class="gt_row gt_right">0.285</td>
+      <td class="gt_row gt_right">0.089</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_right">44</td>
+      <td class="gt_row gt_left">Slovenia</td>
+      <td class="gt_row gt_right">6.118</td>
+      <td class="gt_row gt_right">1.258</td>
+      <td class="gt_row gt_right">1.523</td>
+      <td class="gt_row gt_right">0.953</td>
+      <td class="gt_row gt_right">0.564</td>
+      <td class="gt_row gt_right">0.144</td>
+      <td class="gt_row gt_right">0.057</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_right">97</td>
+      <td class="gt_row gt_left">Bulgaria</td>
+      <td class="gt_row gt_right">5.011</td>
+      <td class="gt_row gt_right">1.092</td>
+      <td class="gt_row gt_right">1.513</td>
+      <td class="gt_row gt_right">0.815</td>
+      <td class="gt_row gt_right">0.311</td>
+      <td class="gt_row gt_right">0.081</td>
+      <td class="gt_row gt_right">0.004</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_right">77</td>
+      <td class="gt_row gt_left">Dominican Republic</td>
+      <td class="gt_row gt_right">5.425</td>
+      <td class="gt_row gt_right">1.015</td>
+      <td class="gt_row gt_right">1.401</td>
+      <td class="gt_row gt_right">0.779</td>
+      <td class="gt_row gt_right">0.497</td>
+      <td class="gt_row gt_right">0.113</td>
+      <td class="gt_row gt_right">0.101</td>
+    </tr>
+  </tbody>
+  
+  
+</table></div>
+
+---
+
+# Exploratory Data Analysis
+
+
+
+
+.center[
+![](03-Regression_Properties_files/figure-html/unnamed-chunk-5-1.png)&lt;!-- --&gt;
+]
+
+---
+
+# EDA (with lines!)
+
+.center[
+![](03-Regression_Properties_files/figure-html/unnamed-chunk-6-1.png)&lt;!-- --&gt;
+]
+
+---
+
+# EDA (with lines!)
+
+.center[
+![](03-Regression_Properties_files/figure-html/unnamed-chunk-7-1.png)&lt;!-- --&gt;
+]
+
+---
+
+# EDA (with lines!)
+
+.center[
+![](03-Regression_Properties_files/figure-html/unnamed-chunk-8-1.png)&lt;!-- --&gt;
+]
+
+---
+
+# EDA (with chartreuse lines!)
+
+.center[
+![](03-Regression_Properties_files/figure-html/unnamed-chunk-9-1.png)&lt;!-- --&gt;
+]
+
+---
+
+# EDA
+
+
+![](03-Regression_Properties_files/figure-html/unnamed-chunk-10-1.png)&lt;!-- --&gt;
+
+---
+
+# The (Linear) Model
+
+.center[
+&lt;img src="03-Regression_Properties_files/figure-html/unnamed-chunk-11-1.png" width="75%" /&gt;
+]
+
+.pull-left[
+**The model**:
+
+`$$\large\hat{y}=\hat{\beta}_{0}+\hat{\beta}_{1}x_{1}\normalsize$$`
+
+]
+
+.pull-right[
+&lt;table&gt;
+  &lt;tr&gt;
+    &lt;td class="cell-center"&gt;\(y\)&lt;/td&gt;
+    &lt;td class="cell-center"&gt;\(\hat{y}\)&lt;/td&gt;
+    &lt;td class="cell-left"&gt;&amp;ensp;Outcome variable&lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+    &lt;td class="cell-center"&gt;\(x\)&lt;/td&gt;
+    &lt;td class="cell-center"&gt;\(x_1\)&lt;/td&gt;
+    &lt;td class="cell-left"&gt;&amp;ensp;Explanatory variable&lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+    &lt;td class="cell-center"&gt;\(\beta_{1}\)&lt;/td&gt;
+    &lt;td class="cell-center"&gt;\(\hat{\beta_1}\)&lt;/td&gt;
+    &lt;td class="cell-left"&gt;&amp;ensp;Slope&lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+    &lt;td class="cell-center"&gt;\(\beta_{0}\)&lt;/td&gt;
+    &lt;td class="cell-center"&gt;\(\hat{\beta_0}\)&lt;/td&gt;
+    &lt;td class="cell-left"&gt;&amp;ensp;y-intercept&lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/table&gt;
+]
+
+---
+
+# The (Linear) Model
+
+.center[
+&lt;img src="03-Regression_Properties_files/figure-html/unnamed-chunk-12-1.png" width="75%" /&gt;
+]
+
+.pull-left[
+**Another way to write the model**:
+
+`$$\large\hat{E}[Y\mid x_{1}]=\hat{\beta}_{0}+\hat{\beta}_{1}x_{1}\normalsize$$`
+- `\(\hat{E}[Y\mid x_{1}]\)`: The **expected value** of *Y* **given** `\(x_{1}\)`
+]
+
+.pull-right[
+The `\(\beta_{0}+\beta_{1}x_{1}\)` is a [linear] *parametric restriction* on the shape of `\(E[Y\mid x_{1}]\)`. 
+- `\(\beta_{0}\)` and `\(\beta_{1}\)` are known as **parameters**. 
+
+One way to generate **unbiased estimates** of `\(\beta_{0}\)` and `\(\beta_{1}\)` is via **ordinary least squares (OLS)**.  
+]
+
+---
+
+class: center, middle, frame
+
+# Building the Model
+
+---
+
+# Modeling GDP and Happiness
+
+.pull-left[
+![](03-Regression_Properties_files/figure-html/unnamed-chunk-13-1.png)&lt;!-- --&gt;
+]
+
+.pull-right[
+`$$\large \widehat{Happiness}=\hat{\beta}_{0}+\hat{\beta}_{1}\times GDP\normalsize$$`
+
+```r
+happy_fit = lm(Score ~ GDP_per_capita, 
+               data = world_happiness)
+happy_fit
+```
+
+```
+## 
+## Call:
+## lm(formula = Score ~ GDP_per_capita, data = world_happiness)
+## 
+## Coefficients:
+##    (Intercept)  GDP_per_capita  
+##          3.399           2.218
+```
+
+- `\(\hat{\beta}_{0}=3.399\)`
+- `\(\hat{\beta}_{1}=2.218\)`
+]
+
+--
+
+`$$\large \widehat{Happiness}=3.399+2.218\times GDP\normalsize$$`
+
+---
+
+# Modeling GDP and Happiness
+
+
+```r
+tidy(happy_fit, conf.int = TRUE)
+```
+
+```
+## # A tibble: 2 x 7
+##   term           estimate std.error statistic  p.value conf.low conf.high
+##   &lt;chr&gt;             &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;    &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt;
+## 1 (Intercept)        3.40     0.135      25.1 2.44e-56     3.13      3.67
+## 2 GDP_per_capita     2.22     0.137      16.2 4.32e-35     1.95      2.49
+```
+
+
+```r
+glance(happy_fit)
+```
+
+```
+## # A tibble: 1 x 11
+##   r.squared adj.r.squared sigma statistic  p.value    df logLik   AIC   BIC
+##       &lt;dbl&gt;         &lt;dbl&gt; &lt;dbl&gt;     &lt;dbl&gt;    &lt;dbl&gt; &lt;int&gt;  &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
+## 1     0.630         0.628 0.679      262. 4.32e-35     2  -160.  326.  335.
+## # … with 2 more variables: deviance &lt;dbl&gt;, df.residual &lt;int&gt;
+```
+
+---
+
+# OLS Behind The Scenes
+
+.pull-left[
+![](03-Regression_Properties_files/figure-html/unnamed-chunk-17-1.png)&lt;!-- --&gt;
+]
+
+.pull-right[
+Each *possible* line through the data will have different values for `\(\hat{\beta}_{0}\)` and `\(\hat{\beta}_{1}\)`. 
+
+- The line for which the **sum of squared residuals (SSE)** is the smallest is the **least squares line**. 
+
+- In other words, minimize (using *calculus* and *linear algebra*): `$$SSE=\sum_{i=1}^{n}(y_{i}-\hat{y}_{i})^2$$`
+]
+
+---
+
+# Interpreting Results
+
+For single (*numerical*) *X*:
+
+.center[
+## A one unit increase in X is *associated* with&lt;br&gt;a β&lt;sub&gt;1&lt;/sub&gt; increase (or decrease) in Y, on average.
+]
+
+.pull-left[
+![](03-Regression_Properties_files/figure-html/unnamed-chunk-18-1.png)&lt;!-- --&gt;
+]
+
+--
+
+.pull-right[
+`$$\large \widehat{Happiness}=3.399+2.218\times GDP\normalsize$$`
+
+- A one unit increase in *adjusted GDP* is associated with a 2.218 point increase in *happiness*, on average. 
+    - (A **one-quarter** unit increase in *adjusted GDP* is associated with a `\(2.218/4=0.5545\)` point increase in *happiness*, on average.)
+]
+
+---
+
+# Connection to Causal Inference
+
+.pull-left[
+
+Does `GDP per capita` **cause** `happiness`?
+
+![](03-Regression_Properties_files/figure-html/unnamed-chunk-19-1.png)&lt;!-- --&gt;
+]
+
+--
+
+.pull-right[
+Any **confounders**?
+
+![](03-Regression_Properties_files/figure-html/unnamed-chunk-20-1.png)&lt;!-- --&gt;
+]
+
+--
+
+`Social support` is a **confounder** that influences *both* `GDP per capita` and `Happiness`. We need to **adjust** for it. 
+
+---
+
+# Multiple Regression
+
+**We're not limited to just one explanatory variable!!!**
+
+`$$\large \hat{y}=\hat{\beta}_{0}+\hat{\beta}_{1}x_{1}+\hat{\beta}_{2}x_{2}+\cdots+\hat{\beta}_{k}x_{k}\normalsize$$`
+
+--
+
+
+```r
+happy_mult_model = lm(Score ~ GDP_per_capita + Social_support, 
+                    data = world_happiness)
+tidy(happy_mult_model, conf.int = TRUE)
+```
+
+```
+## # A tibble: 3 x 7
+##   term           estimate std.error statistic  p.value conf.low conf.high
+##   &lt;chr&gt;             &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;    &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt;
+## 1 (Intercept)        2.33     0.212     11.0  4.44e-21    1.91       2.75
+## 2 GDP_per_capita     1.35     0.187      7.18 2.80e-11    0.976      1.72
+## 3 Social_support     1.54     0.250      6.16 6.18e- 9    1.04       2.03
+```
+
+`$$\widehat{Happiness}=2.33+1.35(GDP) + 1.54(Social\_support)$$`
+
+--
+
+.center[
+### *Holding everything else constant*, a one unit increase in X is *associated* with a β&lt;sub&gt;i&lt;/sub&gt; increase (or decrease) in Y, on average.
+]
+
+---
+
+# Inference Detour
+
+
+```r
+tidy(happy_mult_model, conf.int = TRUE)
+```
+
+```
+## # A tibble: 3 x 7
+##   term           estimate std.error statistic  p.value conf.low conf.high
+##   &lt;chr&gt;             &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;    &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt;
+## 1 (Intercept)        2.33     0.212     11.0  4.44e-21    1.91       2.75
+## 2 GDP_per_capita     1.35     0.187      7.18 2.80e-11    0.976      1.72
+## 3 Social_support     1.54     0.250      6.16 6.18e- 9    1.04       2.03
+```
+
+--
+
+For `GDP_per_capita`: The `p.value` of `2.88e-11` (i.e., a **very small** number) is for the following hypothesis test:
+
+- `\(H_{0}:\beta_{1}=0\)` vs. `\(H_{A}:\beta_{1}\neq0\)`
+
+- In a **null world**, `\(\beta_{1}=0\)`; the **p-value** shows the *probability of observing something at least as extreme as* `\(\beta_{1}=1.35\)` *in a null world*. 😓😓😓
+
+(reject `\(H_{0}\)`, conclude that `GDP per capita` and `Happiness` are *associated* after controlling for `Social support`)
+
+---
+
+# Inference Detour
+
+
+```r
+tidy(happy_mult_model, conf.int = TRUE)
+```
+
+```
+## # A tibble: 3 x 7
+##   term           estimate std.error statistic  p.value conf.low conf.high
+##   &lt;chr&gt;             &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;    &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt;
+## 1 (Intercept)        2.33     0.212     11.0  4.44e-21    1.91       2.75
+## 2 GDP_per_capita     1.35     0.187      7.18 2.80e-11    0.976      1.72
+## 3 Social_support     1.54     0.250      6.16 6.18e- 9    1.04       2.03
+```
+
+You could also just look at the 95% **confidence intervals** - they tend to be a bit more informative!
+
+- We're 95% confident that `\(\beta_{1}\in(0.976, 1.72)\)`. 
+
+--
+
+Our **estimate** of the association between `GDP per capita` and `Happiness` is `\(\hat{\beta}_{1}=1.35\)`. 
+
+- Hopefully it's close to the truth!
+
+---
+
+class: center, middle, frame
+
+# Model (Mis)specification
+
+---
+
+# Let's go to the movies!
+
+After controlling for movie `length`, is there a *causal effect* between `genre` (Action vs. Comedy) and IMDb `rating`?
+
+
+
+
+```r
+movie_model = lm(rating ~ length + genre, data = movie_data)
+tidy(movie_model, conf.int = TRUE)
+```
+
+```
+## # A tibble: 3 x 7
+##   term        estimate std.error statistic   p.value  conf.low conf.high
+##   &lt;chr&gt;          &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;
+## 1 (Intercept)  5.12      0.159       32.2  1.77e-156  4.80       5.43   
+## 2 length       0.00223   0.00142      1.57 1.17e-  1 -0.000559   0.00501
+## 3 genreComedy  0.733     0.106        6.91 8.61e- 12  0.525      0.942
+```
+
+--
+
+`$$\large\widehat{rating} = 5.12 + 0.00223(length) + 0.733(comedy)\normalsize$$`
+--
+
+After controlling for movie `length`, **comedy** movies tend to be rated 0.733 points *higher* than **action** movies, *on average*. 
+
+- `\(\hat{E}[rating\mid \text{length}, \text{genre} = \text{comedy}] = 5.12 + 0.00223(length) + 0.733(Comedy)\normalsize\)`
+
+- `\(\hat{E}[rating\mid \text{length}, \text{genre} = \text{action}] = 5.12 + 0.00223(length)\normalsize\)`
+
+---
+
+# But...
+
+Is a **linear model** appropriate?
+
+.center[
+&lt;img src="03-Regression_Properties_files/figure-html/unnamed-chunk-26-1.png" width="75%" /&gt;
+]
+
+--
+
+Remember...
+
+- The `\(\beta_{0}+\beta_{1}x_{1} + \beta_{2}x_{2}\)` is a [linear] *parametric restriction* on the shape of `\(E[Y\mid x_{1}, x_{2}]\)`.
+
+A **linear relationship** served as an *a priori restriction*. 
+
+(We're also assuming that the **residuals** are *Normally distributed* with mean 0.)
+
+---
+
+# A Good Quote
+
+.pull-left[
+*All models are wrong, but some are useful*. 
+- George Box, famous statistician
+]
+
+.pull-right[
+&lt;img src="box.jpg" width="1365" /&gt;
+]
+
+---
+
+# Parametric Models
+
+**Linear regression models**, are examples of **parametric models** - inferences are only correct *if the model is correctly specified*. 
+
+- `\(\hat{E}[rating\mid length,\ genre]=\widehat{rating}=\hat{\beta}_{0}+\hat{\beta}_{1}(length)+\hat{\beta}_{2}(genre)\)` is a **linear model**. 
+    - This restricts the *form* of the model to a **straight line**.
+    
+--
+
+Many model-based causal analyses rely on the assumption of **no model misspecification**. 
+
+- What exactly counts as *model misspecification* depends on the type of model used!
+
+--
+
+Parametric models are *rarely* perfectly specified (because they're always wrong). 
+
+&lt;img src="box.jpg" width="25%" /&gt;
+
+---
+
+# Additional Topics
+
+.display1[Smoothing]
+
+A model can include multiple functions of one variable!
+
+- For example, `\(\hat{E}[rating\mid length,\ genre]=\widehat{rating}=\hat{\beta}_{0}+\hat{\beta}_{1}(length)+\hat{\beta}_{2}(length^2)\)` **is still a linear model**. 
+
+We might also choose to fit *separate* models on smaller subsets of the data. 
+
+--
+
+&lt;br&gt;&lt;/br&gt;
+
+.display2[Bias-Variance Trade-Off]
+
+The *more parameters* and/or the *less smooth* the model, the more protection afforded against bias from **model misspecification** (Hernan and Robins). 
+
+- .display[BUT]: Less smooth models typically yield **higher variance** around parameter estimates!
+
+---
+
+# Nonparametric Models
+
+Let's consider a simpler model of IMDb `rating`, using *only* `genre`: `$$\large\widehat{rating}=\hat{\beta}_{0}+\hat{\beta}_{1}(genre)\normalsize$$`
+- (the "correlation is not causation" model)
+
+--
+
+
+```r
+movie_simple_model = lm(rating ~ genre, data = movie_data)
+tidy(movie_simple_model, conf.int = TRUE)
+```
+
+```
+## # A tibble: 2 x 7
+##   term        estimate std.error statistic  p.value conf.low conf.high
+##   &lt;chr&gt;          &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;    &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt;
+## 1 (Intercept)    5.34     0.0696     76.8  0.          5.20      5.48 
+## 2 genreComedy    0.671    0.0984      6.82 1.60e-11    0.478     0.864
+```
+
+`$$\widehat{rating}=5.34+0.671(comedy)$$`
+
+---
+
+# Nonparametric Models
+
+
+```r
+movie_simple_model = lm(rating ~ genre, data = movie_data)
+tidy(movie_simple_model, conf.int = TRUE)
+```
+
+```
+## # A tibble: 2 x 7
+##   term        estimate std.error statistic  p.value conf.low conf.high
+##   &lt;chr&gt;          &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;    &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt;
+## 1 (Intercept)    5.34     0.0696     76.8  0.          5.20      5.48 
+## 2 genreComedy    0.671    0.0984      6.82 1.60e-11    0.478     0.864
+```
+
+`$$\widehat{rating}=5.34+0.671(comedy)$$`
+
+- For `\(comedy=1\)`: `\(\widehat{rating}=5.34+0.671(1)=6.011\)`
+- For `\(comedy=0\)`: `\(\widehat{rating}=5.34+0.671(0)=5.34\)`
+
+--
+
+Another way to write:
+
+- `\(\hat{E}[rating\mid comedy=1] = \hat{E}[rating\mid comedy=0]+0.671\)`
+
+(This is actually a slightly more convoluted way of doing something that we've been able to do since back in Intro Stats!)
+
+---
+
+# Nonparametric Models
+
+`\(\hat{E}[rating\mid comedy=1] = \hat{E}[rating\mid comedy=0]+0.671\)`
+
+
+```r
+movie_data %&gt;%
+  group_by(genre) %&gt;%
+  summarize(mean_rating = mean(rating))
+```
+
+```
+## # A tibble: 2 x 2
+##   genre  mean_rating
+##   &lt;fct&gt;        &lt;dbl&gt;
+## 1 Action        5.34
+## 2 Comedy        6.01
+```
+
+--
+
+All we did was calculate the **mean rating** *for each genre*!
+
+- This is an example of a **nonparametric model**, because *it doesn't impose any parametric conditions on the distribution of the data*. 
+    - We just let the data speak for themselves!
+    
+---
+
+# Calculating Means
+
+
+```
+## # A tibble: 2 x 7
+##   term        estimate std.error statistic  p.value conf.low conf.high
+##   &lt;chr&gt;          &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;    &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt;
+## 1 (Intercept)    5.34     0.0696     76.8  0.          5.20      5.48 
+## 2 genreComedy    0.671    0.0984      6.82 1.60e-11    0.478     0.864
+```
+
+```
+## # A tibble: 2 x 2
+##   genre  mean_rating
+##   &lt;fct&gt;        &lt;dbl&gt;
+## 1 Action        5.34
+## 2 Comedy        6.01
+```
+
+.pull-left[
+Note that *this model is always true* - it's just reporting the *means* back to us. 
+]
+
+.pull-right[
+&lt;img src="03-Regression_Properties_files/figure-html/unnamed-chunk-33-1.png" width="75%" /&gt;
+]
+
+---
+
+# Looking Ahead
+
+We'll consider several frequently-used *nonparametric* methods throughout STAT 391!
+
+- .display1[Matching]
+
+- .display2[Subclassification]
+
+- .display3[Inverse probability weighting]
+
+--
+
+But we'll also consider methods that rely on **linear regression** as a backbone. 
+
+- It isn't always *perfect*. But it's powerful, relatively straightforward, and sometimes it can even be useful!
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"countIncrementalSlides": false,
+"highlightLines": true
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

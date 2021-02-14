@@ -1,0 +1,780 @@
+---
+title: "STAT 391: Applied Causal Inference"
+subtitle: "Properties of Regression"
+author: "Anthony Scotina"
+date: 
+output:
+  xaringan::moon_reader:
+    lib_dir: libs
+    css: ["my-theme.css", "my-fonts.css"]
+    nature:
+      countIncrementalSlides: false
+      highlightLines: true
+---
+
+```{r xaringan-themer, include = FALSE}
+library(xaringanthemer)
+mono_accent(base_color = "#5E5E5E") #3E8A83?
+options(htmltools.preserve.raw = FALSE)
+```
+
+```{r, include = FALSE}
+library(tidyverse)
+library(broom)
+library(patchwork)
+library(ggdag)
+```
+
+<!--
+pagedown::chrome_print("~/Dropbox/Teaching/03-Simmons Courses/MATH228-Introduction to Data Science/Lecture Slides/01-Introduction/01-Introduction.html")
+-->
+
+class: center, middle, frame
+
+# Components of the Model
+
+---
+
+# The Essentials
+
+.pull-left.center[
+# Y
+
+### Response Variable
+
+### Outcome Variable
+
+### Dependent Variable
+
+*This is the thing you want to predict or model!*
+]
+
+--
+
+.pull-right.center[
+# X
+
+### Predictor Variable
+
+### Explanatory Variable
+
+### Independent Variable
+
+*This is the thing you use to predict or model **Y**!*
+]
+
+---
+
+# Examples
+
+**Identify Y and X in each!**
+
+1. .display1[A study examines the effect of second-line treatment on risk of cardiovascular disease in patients with type 2 diabetes.] 
+
+2. .display2[Netflix uses your past viewing history, the day of the week, and the time of the day to guess which show you want to watch next.]
+
+3. .display3[Provider profiling involves, for example, estimating the effect of different skilled nursing facilities (SNFs) on 30-day rehospitalization rate.]
+
+---
+
+# Two Purposes of Regression
+
+.pull-left.center[
+# Prediction
+
+### Forecast the future
+
+### Focus is on Y
+
+*Researchers predict the risk of CVD on a 70 year-old male T2D patient with high cholesterol taking metformin and gliclazide*.
+
+]
+
+--
+
+.pull-right.center[
+# Explanation
+
+### Explain the EFFECT of X on Y
+
+### Focus is on X
+
+*Netflix looks at the effect of the time of day on show selection*
+]
+
+---
+
+# How can we do this?
+
+For example...
+
+## Ordinary Least Squares (OLS)
+
+--
+
+1. **Exploratory Data Analysis**
+    - Plot **X** and **Y**
+    - Draw a **line** that *approximates* the relationship
+    
+2. Find the **equation** for the line.
+
+3. **Interpret**
+
+4. Profit 🤑🤑🤑
+
+---
+
+# Let's go to the movies!
+
+What is the *causal effect* of `GDP per capita` on IMDb `happiness`?
+- We'll use data from the 2019 [World Happiness Report](https://worldhappiness.report/), downloaded from **Kaggle**.
+
+```{r, message = FALSE, warning = FALSE}
+world_happiness <- read_csv("2019.csv")
+```
+
+```{r, warning = FALSE, message = FALSE}
+set.seed(391) # To get same sampled rows every time
+world_happiness %>%
+  sample_n(5) %>%
+  gt::gt()
+```
+
+---
+
+# Exploratory Data Analysis
+
+```{r, echo = FALSE}
+happy_model = lm(Score ~ GDP_per_capita, data = world_happiness)
+happy_fit = augment(happy_model)
+```
+
+
+.center[
+```{r, echo = FALSE, dpi = 300, fig.dim=c(8, 4)}
+ggplot(happy_fit, aes(x = GDP_per_capita, y = Score)) + 
+  geom_point(size = 2) + 
+  labs(x = "Adjusted GDP (per capita)", y = "Happiness Score (1-10)") + 
+  theme_minimal()
+```
+]
+
+---
+
+# EDA (with lines!)
+
+.center[
+```{r, message = FALSE, echo = FALSE, dpi = 300, fig.dim=c(8, 4)}
+ggplot(happy_fit, aes(x = GDP_per_capita, y = Score)) + 
+  geom_point(size = 2) + 
+  geom_smooth(method = "lm", se = FALSE, formula = y ~ splines::bs(x, 7)) +
+  labs(x = "Adjusted GDP (per capita)", y = "Happiness Score (1-10)") + 
+  theme_minimal()
+```
+]
+
+---
+
+# EDA (with lines!)
+
+.center[
+```{r, message = FALSE, echo = FALSE, dpi = 300, fig.dim=c(8, 4)}
+ggplot(happy_fit, aes(x = GDP_per_capita, y = Score)) + 
+  geom_point(size = 2) + 
+  geom_smooth(method = "loess", se = FALSE) +
+  labs(x = "Adjusted GDP (per capita)", y = "Happiness Score (1-10)") + 
+  theme_minimal()
+```
+]
+
+---
+
+# EDA (with lines!)
+
+.center[
+```{r, message = FALSE, echo = FALSE, dpi = 300, fig.dim=c(8, 4)}
+ggplot(happy_fit, aes(x = GDP_per_capita, y = Score)) + 
+  geom_point(size = 2) + 
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(x = "Adjusted GDP (per capita)", y = "Happiness Score (1-10)") + 
+  theme_minimal()
+```
+]
+
+---
+
+# EDA (with chartreuse lines!)
+
+.center[
+```{r, message = FALSE, echo = FALSE, dpi = 300, fig.dim=c(8, 4)}
+ggplot(happy_fit, aes(x = GDP_per_capita, y = Score)) + 
+  geom_point(size = 2) + 
+  geom_smooth(method = "lm", se = FALSE) +
+  geom_segment(aes(xend = GDP_per_capita, yend = .fitted), color = "chartreuse", size = 0.75) +
+  labs(x = "Adjusted GDP (per capita)", y = "Happiness Score (1-10)") + 
+  theme_minimal()
+```
+]
+
+---
+
+# EDA
+
+
+```{r, message = FALSE, echo = FALSE, dpi = 300, fig.dim=c(8, 4)}
+lm_plot <- ggplot(happy_fit, aes(x = GDP_per_capita, y = Score)) + 
+  geom_point(size = 2) + 
+  geom_smooth(method = "lm", se = FALSE) +
+  geom_segment(aes(xend = GDP_per_capita, yend = .fitted), color = "purple", size = 0.75) +
+  labs(x = "Adjusted GDP (per capita)", y = "Happiness Score (1-10)", title = "GDP and Happiness") + 
+  theme_minimal()
+
+resid_plot <- ggplot(happy_fit, aes(x = GDP_per_capita, y = .resid)) + 
+  geom_hline(yintercept = 0, size = 1) +
+  geom_point(size = 2) + 
+  geom_segment(aes(xend = GDP_per_capita, yend = 0), color = "purple", size = 0.75) +
+  labs(x = "Adjusted GDP (per capita)", y = "Residual", title = "Residual Errors") + 
+  theme_minimal()
+
+(lm_plot) + (resid_plot)
+```
+
+---
+
+# The (Linear) Model
+
+.center[
+```{r, message = FALSE, echo = FALSE, dpi = 300, fig.dim=c(8, 4), out.width = "75%"}
+ggplot(happy_fit, aes(x = GDP_per_capita, y = Score)) + 
+  geom_point(size = 2) + 
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(x = "Adjusted GDP (per capita)", y = "Happiness Score (1-10)") + 
+  theme_minimal()
+```
+]
+
+.pull-left[
+**The model**:
+
+$$\large\hat{y}=\hat{\beta}_{0}+\hat{\beta}_{1}x_{1}\normalsize$$
+
+]
+
+.pull-right[
+<table>
+  <tr>
+    <td class="cell-center">\(y\)</td>
+    <td class="cell-center">\(\hat{y}\)</td>
+    <td class="cell-left">&ensp;Outcome variable</td>
+  </tr>
+  <tr>
+    <td class="cell-center">\(x\)</td>
+    <td class="cell-center">\(x_1\)</td>
+    <td class="cell-left">&ensp;Explanatory variable</td>
+  </tr>
+  <tr>
+    <td class="cell-center">\(\beta_{1}\)</td>
+    <td class="cell-center">\(\hat{\beta_1}\)</td>
+    <td class="cell-left">&ensp;Slope</td>
+  </tr>
+  <tr>
+    <td class="cell-center">\(\beta_{0}\)</td>
+    <td class="cell-center">\(\hat{\beta_0}\)</td>
+    <td class="cell-left">&ensp;y-intercept</td>
+  </tr>
+</table>
+]
+
+---
+
+# The (Linear) Model
+
+.center[
+```{r, message = FALSE, echo = FALSE, dpi = 300, fig.dim=c(8, 4), out.width = "75%"}
+ggplot(happy_fit, aes(x = GDP_per_capita, y = Score)) + 
+  geom_point(size = 2) + 
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(x = "Adjusted GDP (per capita)", y = "Happiness Score (1-10)") + 
+  theme_minimal()
+```
+]
+
+.pull-left[
+**Another way to write the model**:
+
+$$\large\hat{E}[Y\mid x_{1}]=\hat{\beta}_{0}+\hat{\beta}_{1}x_{1}\normalsize$$
+- $\hat{E}[Y\mid x_{1}]$: The **expected value** of *Y* **given** $x_{1}$
+]
+
+.pull-right[
+The $\beta_{0}+\beta_{1}x_{1}$ is a [linear] *parametric restriction* on the shape of $E[Y\mid x_{1}]$. 
+- $\beta_{0}$ and $\beta_{1}$ are known as **parameters**. 
+
+One way to generate **unbiased estimates** of $\beta_{0}$ and $\beta_{1}$ is via **ordinary least squares (OLS)**.  
+]
+
+---
+
+class: center, middle, frame
+
+# Building the Model
+
+---
+
+# Modeling GDP and Happiness
+
+.pull-left[
+```{r, echo=FALSE, fig.dim=c(4.8, 4.2), dpi = 300, message=FALSE}
+ggplot(happy_fit, aes(x = GDP_per_capita, y = Score)) + 
+  geom_point(size = 2) + 
+  geom_smooth(method = "lm") +
+  labs(x = "Adjusted GDP (per capita)", y = "Happiness Score (1-10)") + 
+  theme_minimal()
+```
+]
+
+.pull-right[
+$$\large \widehat{Happiness}=\hat{\beta}_{0}+\hat{\beta}_{1}\times GDP\normalsize$$
+```{r}
+happy_fit = lm(Score ~ GDP_per_capita, 
+               data = world_happiness)
+happy_fit
+```
+
+- $\hat{\beta}_{0}=3.399$
+- $\hat{\beta}_{1}=2.218$
+]
+
+--
+
+$$\large \widehat{Happiness}=3.399+2.218\times GDP\normalsize$$
+
+---
+
+# Modeling GDP and Happiness
+
+```{r}
+tidy(happy_fit, conf.int = TRUE)
+```
+
+```{r}
+glance(happy_fit)
+```
+
+---
+
+# OLS Behind The Scenes
+
+.pull-left[
+```{r, echo=FALSE, fig.dim=c(4.8, 4.2), dpi = 300, message=FALSE}
+ggplot(happy_fit, aes(x = GDP_per_capita, y = Score)) + 
+  geom_point(size = 2) + 
+  geom_smooth(method = "lm", se = FALSE, size = 2) +
+  geom_segment(aes(xend = GDP_per_capita, yend = .fitted), color = "purple", size = 0.75) +
+  labs(x = "Adjusted GDP (per capita)", y = "Happiness Score (1-10)", title = "GDP and Happiness") + 
+  theme_minimal()
+```
+]
+
+.pull-right[
+Each *possible* line through the data will have different values for $\hat{\beta}_{0}$ and $\hat{\beta}_{1}$. 
+
+- The line for which the **sum of squared residuals (SSE)** is the smallest is the **least squares line**. 
+
+- In other words, minimize (using *calculus* and *linear algebra*): $$SSE=\sum_{i=1}^{n}(y_{i}-\hat{y}_{i})^2$$
+]
+
+---
+
+# Interpreting Results
+
+For single (*numerical*) *X*:
+
+.center[
+## A one unit increase in X is *associated* with<br>a β<sub>1</sub> increase (or decrease) in Y, on average.
+]
+
+.pull-left[
+```{r, echo=FALSE, fig.dim=c(4.8, 4.2), dpi = 300, message=FALSE}
+ggplot(happy_fit, aes(x = GDP_per_capita, y = Score)) + 
+  geom_point(size = 2) + 
+  geom_smooth(method = "lm") +
+  labs(x = "Adjusted GDP (per capita)", y = "Happiness Score (1-10)") + 
+  theme_minimal()
+```
+]
+
+--
+
+.pull-right[
+$$\large \widehat{Happiness}=3.399+2.218\times GDP\normalsize$$
+
+- A one unit increase in *adjusted GDP* is associated with a 2.218 point increase in *happiness*, on average. 
+    - (A **one-quarter** unit increase in *adjusted GDP* is associated with a $2.218/4=0.5545$ point increase in *happiness*, on average.)
+]
+
+---
+
+# Connection to Causal Inference
+
+.pull-left[
+
+Does `GDP per capita` **cause** `happiness`?
+
+```{r, echo = FALSE, fig.width=5, fig.height=3.4, dpi = 350}
+dagify(
+  Y ~ T,
+  labels = c("Y" = "Happiness", 
+             "T" = "GDP"),
+  exposure = "T", 
+  outcome = "Y",
+  coords = list(x = c(T = 1, Y = 2), 
+                y = c(T = 1, Y = 1))
+) %>% 
+  tidy_dagitty() %>% 
+  node_status() %>%
+  ggplot(aes(x = x, y = y, xend = xend, yend = yend)) +
+  geom_dag_edges() +
+  geom_dag_point(aes(color = status), size = 17) +
+  geom_dag_label_repel(aes(label = label)) +
+  scale_color_manual(values = c("#FF4136", "#0074D9")) +
+  guides(color = FALSE) +
+  theme_dag()
+```
+]
+
+--
+
+.pull-right[
+Any **confounders**?
+
+```{r, echo = FALSE, fig.width=5, fig.height=3.4, dpi = 350}
+dagify(
+  Y ~ T + C,
+  T ~ C,
+  labels = c("Y" = "Happiness", 
+             "T" = "GDP", 
+             "C" = "Social Support"),
+  exposure = "T", 
+  outcome = "Y",
+  latent = "C",
+  coords = list(x = c(T = 1, Y = 3, C = 2), 
+                y = c(T = 1, Y = 1, C = 2))
+) %>% 
+  tidy_dagitty() %>% 
+  node_status() %>%
+  ggplot(aes(x = x, y = y, xend = xend, yend = yend)) +
+  geom_dag_edges() +
+  geom_dag_point(aes(color = status), size = 17) +
+  geom_dag_label_repel(aes(label = label)) +
+  scale_color_manual(values = c("#FF4136", "gray80", "#0074D9")) +
+  guides(color = FALSE) +
+  theme_dag()
+```
+]
+
+--
+
+`Social support` is a **confounder** that influences *both* `GDP per capita` and `Happiness`. We need to **adjust** for it. 
+
+---
+
+# Multiple Regression
+
+**We're not limited to just one explanatory variable!!!**
+
+$$\large \hat{y}=\hat{\beta}_{0}+\hat{\beta}_{1}x_{1}+\hat{\beta}_{2}x_{2}+\cdots+\hat{\beta}_{k}x_{k}\normalsize$$
+
+--
+
+```{r}
+happy_mult_model = lm(Score ~ GDP_per_capita + Social_support, 
+                    data = world_happiness)
+tidy(happy_mult_model, conf.int = TRUE)
+```
+
+$$\widehat{Happiness}=2.33+1.35(GDP) + 1.54(Social\_support)$$
+
+--
+
+.center[
+### *Holding everything else constant*, a one unit increase in X is *associated* with a β<sub>i</sub> increase (or decrease) in Y, on average.
+]
+
+---
+
+# Inference Detour
+
+```{r}
+tidy(happy_mult_model, conf.int = TRUE)
+```
+
+--
+
+For `GDP_per_capita`: The `p.value` of `2.88e-11` (i.e., a **very small** number) is for the following hypothesis test:
+
+- $H_{0}:\beta_{1}=0$ vs. $H_{A}:\beta_{1}\neq0$
+
+- In a **null world**, $\beta_{1}=0$; the **p-value** shows the *probability of observing something at least as extreme as* $\beta_{1}=1.35$ *in a null world*. 😓😓😓
+
+(reject $H_{0}$, conclude that `GDP per capita` and `Happiness` are *associated* after controlling for `Social support`)
+
+---
+
+# Inference Detour
+
+```{r}
+tidy(happy_mult_model, conf.int = TRUE)
+```
+
+You could also just look at the 95% **confidence intervals** - they tend to be a bit more informative!
+
+- We're 95% confident that $\beta_{1}\in(0.976, 1.72)$. 
+
+--
+
+Our **estimate** of the association between `GDP per capita` and `Happiness` is $\hat{\beta}_{1}=1.35$. 
+
+- Hopefully it's close to the truth!
+
+---
+
+class: center, middle, frame
+
+# Model (Mis)specification
+
+---
+
+# Let's go to the movies!
+
+After controlling for movie `length`, is there a *causal effect* between `genre` (Action vs. Comedy) and IMDb `rating`?
+
+```{r, echo = FALSE, message = FALSE, warning = FALSE}
+library(ggplot2movies)  
+
+# Data cleaning
+set.seed(391)  # Set seed so we get the same sampled rows every time
+movie_data = movies %>% 
+  # Make a binary column for genre
+  select(title, year, length, rating, Action, Comedy) %>% 
+  filter(!(Action == 1 & Comedy == 1)) %>% 
+  mutate(genre = case_when(Action == 1 ~ "Action",
+                           Comedy == 1 ~ "Comedy",
+                           TRUE ~ "Neither")) %>%
+  filter(genre != "Neither") %>%
+  # Make genre a factor (just to be safe)
+  mutate(genre = factor(genre)) %>% 
+  select(-Action, -Comedy) %>% 
+  # Randomly select 500 movies in each genre
+  group_by(genre) %>% 
+  sample_n(500) %>% 
+  ungroup()
+```
+
+```{r}
+movie_model = lm(rating ~ length + genre, data = movie_data)
+tidy(movie_model, conf.int = TRUE)
+```
+
+--
+
+$$\large\widehat{rating} = 5.12 + 0.00223(length) + 0.733(comedy)\normalsize$$
+--
+
+After controlling for movie `length`, **comedy** movies tend to be rated 0.733 points *higher* than **action** movies, *on average*. 
+
+- $\hat{E}[rating\mid \text{length}, \text{genre} = \text{comedy}] = 5.12 + 0.00223(length) + 0.733(Comedy)\normalsize$
+
+- $\hat{E}[rating\mid \text{length}, \text{genre} = \text{action}] = 5.12 + 0.00223(length)\normalsize$
+
+---
+
+# But...
+
+Is a **linear model** appropriate?
+
+.center[
+```{r, echo = FALSE, dpi = 300, fig.dim=c(8, 4), message = FALSE, out.width = "75%"}
+ggplot(movie_data, aes(x = length, y = rating, color = genre)) + 
+  geom_point(size = 2) + 
+  geom_smooth(method = "lm", se = FALSE) + 
+  labs(x = "Length (in mins)", y = "IMDb.com rating (1-10)", color = "Genre") + 
+  scale_y_continuous(breaks = scales::pretty_breaks()) +
+  theme_minimal()
+```
+]
+
+--
+
+Remember...
+
+- The $\beta_{0}+\beta_{1}x_{1} + \beta_{2}x_{2}$ is a [linear] *parametric restriction* on the shape of $E[Y\mid x_{1}, x_{2}]$.
+
+A **linear relationship** served as an *a priori restriction*. 
+
+(We're also assuming that the **residuals** are *Normally distributed* with mean 0.)
+
+---
+
+# A Good Quote
+
+.pull-left[
+*All models are wrong, but some are useful*. 
+- George Box, famous statistician
+]
+
+.pull-right[
+```{r, echo = FALSE}
+knitr::include_graphics("box.jpg")
+```
+]
+
+---
+
+# Parametric Models
+
+**Linear regression models**, are examples of **parametric models** - inferences are only correct *if the model is correctly specified*. 
+
+- $\hat{E}[rating\mid length,\ genre]=\widehat{rating}=\hat{\beta}_{0}+\hat{\beta}_{1}(length)+\hat{\beta}_{2}(genre)$ is a **linear model**. 
+    - This restricts the *form* of the model to a **straight line**.
+    
+--
+
+Many model-based causal analyses rely on the assumption of **no model misspecification**. 
+
+- What exactly counts as *model misspecification* depends on the type of model used!
+
+--
+
+Parametric models are *rarely* perfectly specified (because they're always wrong). 
+
+```{r, echo = FALSE, dpi = 250, out.width = "25%"}
+knitr::include_graphics("box.jpg")
+```
+
+---
+
+# Additional Topics
+
+.display1[Smoothing]
+
+A model can include multiple functions of one variable!
+
+- For example, $\hat{E}[rating\mid length,\ genre]=\widehat{rating}=\hat{\beta}_{0}+\hat{\beta}_{1}(length)+\hat{\beta}_{2}(length^2)$ **is still a linear model**. 
+
+We might also choose to fit *separate* models on smaller subsets of the data. 
+
+--
+
+<br></br>
+
+.display2[Bias-Variance Trade-Off]
+
+The *more parameters* and/or the *less smooth* the model, the more protection afforded against bias from **model misspecification** (Hernan and Robins). 
+
+- .display[BUT]: Less smooth models typically yield **higher variance** around parameter estimates!
+
+---
+
+# Nonparametric Models
+
+Let's consider a simpler model of IMDb `rating`, using *only* `genre`: $$\large\widehat{rating}=\hat{\beta}_{0}+\hat{\beta}_{1}(genre)\normalsize$$
+- (the "correlation is not causation" model)
+
+--
+
+```{r}
+movie_simple_model = lm(rating ~ genre, data = movie_data)
+tidy(movie_simple_model, conf.int = TRUE)
+```
+
+$$\widehat{rating}=5.34+0.671(comedy)$$
+
+---
+
+# Nonparametric Models
+
+```{r}
+movie_simple_model = lm(rating ~ genre, data = movie_data)
+tidy(movie_simple_model, conf.int = TRUE)
+```
+
+$$\widehat{rating}=5.34+0.671(comedy)$$
+
+- For $comedy=1$: $\widehat{rating}=5.34+0.671(1)=6.011$
+- For $comedy=0$: $\widehat{rating}=5.34+0.671(0)=5.34$
+
+--
+
+Another way to write:
+
+- $\hat{E}[rating\mid comedy=1] = \hat{E}[rating\mid comedy=0]+0.671$
+
+(This is actually a slightly more convoluted way of doing something that we've been able to do since back in Intro Stats!)
+
+---
+
+# Nonparametric Models
+
+$\hat{E}[rating\mid comedy=1] = \hat{E}[rating\mid comedy=0]+0.671$
+
+```{r, message = FALSE, warning = FALSE}
+movie_data %>%
+  group_by(genre) %>%
+  summarize(mean_rating = mean(rating))
+```
+
+--
+
+All we did was calculate the **mean rating** *for each genre*!
+
+- This is an example of a **nonparametric model**, because *it doesn't impose any parametric conditions on the distribution of the data*. 
+    - We just let the data speak for themselves!
+    
+---
+
+# Calculating Means
+
+```{r, echo = FALSE, message = FALSE, warning = FALSE}
+movie_simple_model = lm(rating ~ genre, data = movie_data)
+tidy(movie_simple_model, conf.int = TRUE)
+
+movie_data %>%
+  group_by(genre) %>%
+  summarize(mean_rating = mean(rating))
+```
+
+.pull-left[
+Note that *this model is always true* - it's just reporting the *means* back to us. 
+]
+
+.pull-right[
+```{r, echo = FALSE, message = FALSE, dpi = 250, out.width = "75%"}
+movie_data %>%
+  group_by(genre) %>%
+  summarize(mean_rating = mean(rating)) %>%
+  ggplot(aes(x = genre, y = mean_rating, fill = genre)) + 
+  geom_col() + 
+  labs(x = "", y = "Mean IMDb Rating (1-10)") + 
+  theme_minimal() + 
+  theme(legend.position = "none")
+```
+]
+
+---
+
+# Looking Ahead
+
+We'll consider several frequently-used *nonparametric* methods throughout STAT 391!
+
+- .display1[Matching]
+
+- .display2[Subclassification]
+
+- .display3[Inverse probability weighting]
+
+--
+
+But we'll also consider methods that rely on **linear regression** as a backbone. 
+
+- It isn't always *perfect*. But it's powerful, relatively straightforward, and sometimes it can even be useful!
