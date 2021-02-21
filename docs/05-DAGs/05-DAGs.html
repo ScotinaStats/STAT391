@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>STAT 391: Applied Causal Inference</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Anthony Scotina" />
+    <script src="libs/header-attrs-2.6/header-attrs.js"></script>
+    <link rel="stylesheet" href="my-theme.css" type="text/css" />
+    <link rel="stylesheet" href="my-fonts.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# STAT 391: Applied Causal Inference
+## Causal Graphical Models
+### Anthony Scotina
+
+---
+
+
+
+
+
+
+&lt;!--
+pagedown::chrome_print("~/Dropbox/Teaching/03-Simmons Courses/MATH228-Introduction to Data Science/Lecture Slides/01-Introduction/01-Introduction.html")
+--&gt;
+
+class: center, middle, frame
+
+# DAG Notation
+
+---
+
+# What is a DAG?
+
+.center[
+## Directed Acyclic Graph
+]
+
+.pull-left[
+
+.display1[**Directed**: Each *node* has an arrow that points to another node.]
+
+.display2[**Acyclic**: Causality runs in [one direction](https://en.wikipedia.org/wiki/One_Direction). There are no *cycles*. ]
+ 
+.display3[**Graph**: It's a graph! (Though not the "usual" kind... 📈📉📊)]
+]
+
+--
+
+.pull-right[
+
+&lt;img src="05-DAGs_files/figure-html/simple-dag-1.png" width="100%" /&gt;
+]
+
+---
+
+# Acyclicness
+
+.center[
+### What is that?
+]
+
+.display2[💜 for Stats → STAT 228 → 💜 for Stats]
+
+--
+
+&lt;br&gt;&lt;/br&gt;
+
+.center[
+## But isn't that cyclic?!
+
+(not quite)
+]
+
+&lt;br&gt;&lt;/br&gt;
+
+.display3[💜 for Stats&lt;sub&gt;*t* - 1&lt;/sub&gt; → STAT 228&lt;sub&gt;*t*&lt;/sub&gt; → 💜 for Stats&lt;sub&gt;*t*&lt;/sub&gt;]
+
+.center[
+### Two versions of the node separated by time index!
+]
+
+---
+
+# The Causal Revolution
+
+.left-column[
+&lt;img src="book_of_why.jpg" width="444" /&gt;
+]
+
+.right-column[
+&lt;img src="pearl.jpg" width="960" /&gt;
+]
+
+---
+
+# How to draw a DAG
+
+.center[
+## Does Treatment *T* cause *Y*?
+]
+
+### 1. List relevant variables
+
+- *T*: **treatment**
+- *Y*: **outcome**
+- *X*: **covariate**
+
+--
+
+### 2. Connect arrows
+
+.pull-left[
+&lt;img src="05-DAGs_files/figure-html/unnamed-chunk-4-1.png" width="75%" /&gt;
+]
+
+---
+
+# How to draw a DAG
+
+.center[
+## Does Treatment *T* cause *Y*?
+]
+
+### 1. List relevant variables
+
+- *T*: **treatment**
+- *Y*: **outcome**
+- &lt;u&gt;**X**&lt;/u&gt;: **covariates** (*X*&lt;sub&gt;1&lt;/sub&gt;, *X*&lt;sub&gt;2&lt;/sub&gt;, *X*&lt;sub&gt;3&lt;/sub&gt;)
+
+### 2. Connect arrows
+
+.pull-left[
+&lt;img src="05-DAGs_files/figure-html/unnamed-chunk-5-1.png" width="75%" /&gt;
+]
+
+---
+
+# How to draw a DAG
+
+.center[
+## Does Treatment *T* cause *Y*?
+]
+
+### 3. Determine which variables to measure/control for
+
+
+```r
+model1 = lm(Y ~ T + X1, data = ...)
+tidy(model1)
+```
+
+&lt;br&gt;&lt;/br&gt;
+
+This depends on your **research question**!
+
+- (and a little bit of *story-telling*)
+
+---
+
+# DAG Notation
+
+.pull-left[
+&lt;img src="05-DAGs_files/figure-html/unnamed-chunk-7-1.png" width="100%" /&gt;
+]
+
+.pull-right[
+.display1[**Nodes** (circles) represent *random variables*.]
+
+.display2[**Arrows** represent a *causal effect* between the two variables.]
+
+- .display3[Direction of arrow] → .display3[Direction of causality]
+]
+
+--
+
+&lt;br&gt;&lt;/br&gt;
+
+From [Causal Inference: The Mixtape](https://mixtape.scunning.com/ch2.html):
+
+&gt; A DAG is supposed to be a theoretical representation of the state-of-the-art knowledge about the phenomena you’re studying.
+
+---
+
+# DAG Example
+
+.center[
+## Does college education increase earnings?
+]
+
+### 1. List relevant variables
+
+.center[
+## Education (treatment, T) → Earnings (outcome, Y)
+]
+
+--
+
+- parental education
+
+- family income
+
+- **unobserved covariates**, *U* (ability, genetics, background, etc.)
+
+---
+
+# DAG Example
+
+.center[
+## Does college education increase earnings?
+]
+
+### 2. Connect arrows
+
+&lt;img src="05-DAGs_files/figure-html/edu-earn-simple-1.png" width="50%" /&gt;
+
+---
+
+# DAG Example
+
+.center[
+## Does college education increase earnings?
+]
+
+### 2. Connect arrows
+
+.pull-left[
+&lt;img src="05-DAGs_files/figure-html/unnamed-chunk-8-1.png" width="100%" /&gt;
+]
+
+--
+
+.pull-right[
+.display2[Education → Earnings]
+
+.display1[Education ← Family Income → Earnings]
+
+.display3[Education ← Parental Education → Family Income → Earnings]
+
+.display3[Education ← Unobserved → Parental Education → Family Income → Earnings]
+]
+
+---
+
+# DAG Example
+
+.center[
+## Does college education increase earnings?
+]
+
+### 3. Determine which variables to measure/control for
+
+--
+
+.center[
+# This requires a bit more work...
+]
+
+&gt; **Causal identification**: A causal effect is *identified* if the association between treatment and outcome is properly isolated. 
+
+.center[
+## Close **backdoor paths** by *adjusting* for those variables!
+
+### This satisfies the *backdoor criterion*. 
+]
+
+---
+
+class: center, middle, frame
+
+# Confounding
+
+---
+
+# Confounding
+
+.pull-left[
+&lt;img src="05-DAGs_files/figure-html/unnamed-chunk-9-1.png" width="100%" /&gt;
+]
+
+.pull-right[
+## Paths involving T and Y?
+
+.display1[T → Y]: **causation**
+
+.display2[Z → T → Y]: **chain**
+
+.display3[T ← Z → Y]: **fork**
+
+]
+
+--
+
+.display2[T ← Z → Y] is a **backdoor path**. 
+
+*Z* is also a **confounder**, and we need to adjust/control for it in order to properly *identify* the causal pathway between *T* and *Y*. 
+
+---
+
+# Let's go to the opera!
+
+**Going to the opera** is *strongly correlated* with **living longer**
+
+- NY Times: [CLICK FOR ARTICLE](https://www.nytimes.com/2019/12/22/us/arts-health-effects-ucl-study.html?smtyp=cur&amp;smid=tw-nythealth)
+
+.pull-left[
+&lt;img src="dag_theater_money.png" width="366" /&gt;
+]
+
+.pull-right[
+**Common cause**: Money 🤑🤑🤑
+
+1. Those who *attend the opera* differ from those who *do not attend the opera* in (at least) one fundamental way. 
+
+2. **Confounding**!
+]
+
+---
+
+# Let's go to the opera!
+
+**Going to the opera** is *strongly correlated* with **living longer**
+
+- NY Times: [CLICK FOR ARTICLE](https://www.nytimes.com/2019/12/22/us/arts-health-effects-ucl-study.html?smtyp=cur&amp;smid=tw-nythealth)
+
+.pull-left[
+&lt;img src="dag_theater_money.png" width="366" /&gt;
+]
+
+.pull-right[
+## Paths between T and Y?
+
+### 1. Attended opera → Life span
+
+### 2. Attended opera ← $$ → Life span
+
+- *Money* is a **confounder**
+]
+
+---
+
+# Closing Back-Door Paths
+
+.center[
+&lt;img src="dag_theater_adj.png" width="366" /&gt;
+]
+
+&lt;br&gt;&lt;/br&gt;
+
+.center[
+## Close the door by adjusting for money
+]
+
+---
+
+# Closing Back-Door Paths
+
+.pull-left[
+&lt;img src="dag_theater_adj.png" width="366" /&gt;
+]
+
+.pull-right[
+We want to compare individuals as if they had similar amounts of **money**. 
+
+- Remove any *differences* in individuals that are *predicted* by money. 
+
+## Hold money constant!
+]
+
+---
+
+# Adjusting for Confounders
+
+.center[
+## Include the terms in a regression model. 
+]
+
+`$$\widehat{LifeSpan} = \hat{\beta}_{0}+\hat{\beta}_{1}(OperaAttendance) + \hat{\beta}_{2}(Income)$$`
+
+### Other ways:
+
+.center[
+## Matching
+
+## Subclassification
+
+## Inverse Probability Weighting
+
+(and more!)
+]
+
+---
+
+# ONLY Adjust for Confounders!
+
+In the **opera** example, the .display1[causal effect] of interest is .display2[Attended opera → Life span]. 
+
+- In order to **isolate** this causal effect, make sure your DAG contains *everything* that is **relevant to the causal effect of interest**!
+
+--
+
+For instance, there are a *bunch* of things that might **cause** .display2[opera attendance]. 
+
+- enjoyment of opera, location, type of job (received tickets as a perk?), vacation time, *unobserved* stuff
+
+👆But these variables have **no causal effect** on the outcome of life span! They don't have to be included in the DAG
+
+--
+
+Derive **valid** .display1[causal] conclusions by building a .display1[causal] DAG
+
+- Any variable that either **directly** or *indirectly* .display1[causally] affects *at least two* variables already included in the DAG should be included. 
+
+---
+
+# Connection to Exchangeability
+
+Ignorability/Exchangeability/Unconfoundedness holds if...
+
+$$ [Y(1), Y(0)] \perp T$$
+
+&gt; The treatment has been assigned to individuals *independent* of their potential outcomes. Treatment assignment has **nothing to do** with potential benefits of the treatment. 
+
+--
+
+- All individuals have the **same probability** of receiving **treatment**. 
+
+- `\(E[Y(1)]-E[Y(0)] = E[Y\mid T=1] - E[Y\mid T=0]\)`
+
+--
+
+.pull-left[
+&lt;img src="05-DAGs_files/figure-html/unnamed-chunk-14-1.png" width="100%" /&gt;
+]
+
+.pull-right[
+.display1[No common causes of treatment and outcome]
+
+.display2[No backdoor paths that need to be blocked]
+]
+
+---
+
+# Conditional Exchangeability
+
+**Conditional** exchangeability (*no unmeasured confounding*) holds if...
+
+$$ [Y(1), Y(0)] \perp T\mid X$$
+
+&gt; The treatment has been assigned to individuals *independent* of their potential outcomes, *conditional on X*. 
+
+- **Example**: The *probability* of receiving treatment varies across levels of *X* in a **conditionally randomized experiment** or an **observational study**. 
+
+--
+
+.pull-left[
+&lt;img src="05-DAGs_files/figure-html/unnamed-chunk-15-1.png" width="100%" /&gt;
+]
+
+.pull-right[
+.display1[*X* is a common cause of treatment and outcome]
+
+.display2[Control for *X* to block the backdoor path]
+]
+
+---
+
+class: center, middle, frame
+
+# Colliders
+
+## When Statistical Control Hurts
+
+---
+
+# What is a collider?
+
+.pull-left[
+&lt;img src="05-DAGs_files/figure-html/unnamed-chunk-16-1.png" width="100%" /&gt;
+
+### Notice any differences?
+]
+
+--
+
+.pull-right[
+## T *causes* X
+
+## Y *causes* X
+
+.display3[*X* is a collider.]
+]
+
+.center[
+## Should you control for X?
+]
+
+---
+
+# NO!!!
+
+.pull-left[
+![](https://media.giphy.com/media/3o7btT1T9qpQZWhNlK/giphy.gif)
+
+![](https://media.giphy.com/media/JYZ397GsFrFtu/giphy.gif)
+]
+
+.pull-right[
+![](https://media.giphy.com/media/3og0IPCZ4Xjydp7sAw/giphy.gif)
+
+![](https://media.giphy.com/media/STfLOU6iRBRunMciZv/giphy.gif)
+]
+
+---
+
+# Health Problems and Work Satisfaction
+
+From [Rohrer (2018)](https://journals.sagepub.com/doi/full/10.1177/2515245917745629):
+
+.center[
+### What are the effects of health problems on work satisfaction?
+]
+
+- longitudinal study
+
+- some amount of follow-up time before measuring **work satisfaction**
+
+.center[
+&lt;img src="05-DAGs_files/figure-html/unnamed-chunk-17-1.png" width="50%" /&gt;
+]
+
+---
+
+# Attrition Bias
+
+&gt; What if *only the respondents who did not* **drop out** were included in the study?
+
+- This would be the same as **controlling for drop out**, a .display3[collider]! 😨😱😨😱
+
+--
+
+.pull-left[
+![](05-DAGs_files/figure-html/unnamed-chunk-18-1.png)&lt;!-- --&gt;
+]
+
+.pull-right[
+- Respondents with **&lt;span style="color: #f8766d;"&gt;health problems&lt;/span&gt;** might have remained in the study if they had **&lt;span style="color: #7f7f7f;"&gt;low-stress jobs&lt;/span&gt;**. 
+- (and vice-versa)
+]
+
+Assuming a .display3[negative relationship] between **health problems** and **work satisfaction**, this effect could be *underestimated* if we only included *those who remained in the study*. 
+
+---
+
+# Collider Bias
+
+.display1[Controlling for colliders can create FAKE causal effects!]
+
+- .display2[...and hide *real* causal effects!]
+
+.center[
+&lt;img src="05-DAGs_files/figure-html/unnamed-chunk-19-1.png" width="75%" /&gt;
+]
+
+.display1[Are points per game dependent on height?]
+
+- Not in the NBA...
+
+---
+
+# Collider Bias and Sample Selection
+
+.center[
+&lt;img src="05-DAGs_files/figure-html/unnamed-chunk-20-1.png" width="65%" /&gt;
+]
+
+.center[
+.display1[Height → Points per game]
+
+.display2[Height → Playing in NBA ← Points per game]
+]
+
+---
+
+class: center, middle, frame
+
+# Mediators
+
+## Overcontrol Bias
+
+---
+
+# What is a mediator?
+
+.pull-left[
+&lt;img src="05-DAGs_files/figure-html/unnamed-chunk-21-1.png" width="100%" /&gt;
+
+### Notice any differences?
+]
+
+--
+
+.pull-right[
+## T *causes* X
+
+## X *causes* Y
+
+.display3[*X* is a mediator.]
+]
+
+.center[
+## Should you control for X?
+]
+
+---
+
+# NO!!!
+
+.pull-left[
+![](https://media.giphy.com/media/3o7btT1T9qpQZWhNlK/giphy.gif)
+
+![](https://media.giphy.com/media/JYZ397GsFrFtu/giphy.gif)
+]
+
+.pull-right[
+![](https://media.giphy.com/media/3og0IPCZ4Xjydp7sAw/giphy.gif)
+
+![](https://media.giphy.com/media/STfLOU6iRBRunMciZv/giphy.gif)
+]
+
+---
+
+# Mediators
+
+Controlling for a **mediator** results in .display3[overcontrol bias]!
+
+- A **mediator** is part of the *main causal pathway* of interest. 
+
+.pull-left[
+![](05-DAGs_files/figure-html/unnamed-chunk-22-1.png)&lt;!-- --&gt;
+]
+
+.pull-right[
+Family income is a **confounder**, so it *must* be controlled for!
+
+- But controlling for **adult intelligence**, a .display2[mediator], blocks a genuine *causal pathway*, and could *underestimate* the causal effect between **education** and **earnings**. 
+
+- Also: Don't control for any **descendants** (or an effect) of a mediator!
+]
+
+---
+
+# Recap
+
+Causal inference in **observational studies** is .display3[very hard]!
+
+- Need to be aware of *all* potential .display1[confounders] and how to control for them. 
+
+Satisfy the **backdoor criterion** and **isolate the causal pathway** by *successfully closing all backdoors in a DAG*. 
+
+--
+
+.center[
+.display1[Close a backdoor by...]
+]
+
+.pull-left-3[
+.center[
+### Adjusting for confounders
+]
+
+&lt;img src="05-DAGs_files/figure-html/unnamed-chunk-23-1.png" width="100%" /&gt;
+]
+
+.pull-middle-3[
+.center[
+### NOT adjusting for colliders
+]
+
+&lt;img src="05-DAGs_files/figure-html/unnamed-chunk-24-1.png" width="100%" /&gt;
+]
+
+.pull-right-3[
+.center[
+### NOT adjusting for mediators
+]
+
+&lt;img src="05-DAGs_files/figure-html/unnamed-chunk-25-1.png" width="100%" /&gt;
+]
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"countIncrementalSlides": false,
+"highlightLines": true
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
