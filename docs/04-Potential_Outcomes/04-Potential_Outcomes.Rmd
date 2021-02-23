@@ -714,33 +714,6 @@ From [Ho et al. (2007)](https://gking.harvard.edu/files/matchp.pdf):
 
 ---
 
-# ATE, ATT, and ATU
-
-.center[
-### The ATE is just a weighted average of the ATT and ATU!
-]
-
-- $ATE = 0.5$
-
-- $ATT = 0.875$
-
-- $ATU = 0.125$
-
-(Also, four students took STAT 228, and four did not take STAT 228.)
-
---
-
-We can decompose the ATE into the part determined by the .display3[treated], and the part determined by the .display3[untreated]:
-
-\begin{align*}
-ATE&=[\text{P}(T = 1)\times ATT] + [\text{P}(T = 0)\times ATU]\\
-   &= \frac{4}{8}\times 0.875 + \frac{4}{8}\times 0.125\\
-   &= 0.4375 + 0.0625\\
-   &= 0.5
-\end{align*}
-
----
-
 # ATE vs ATT
 
 .center[
@@ -892,11 +865,12 @@ Estimate the CATEs...
 - $\widehat{CATE}_{\text{227}}=\frac{1}{3}(8+7.5+8.5) - \frac{1}{1}(6)=2$
 - $\widehat{CATE}_{\text{no227}}=\frac{1}{1}(7.5) - \frac{1}{3}(8+10+8)=-1.1667$
 
+--
+
 \begin{align*}
 \small
 \widehat{ATE}&=[\text{P}(\text{STAT227} = \text{Yes})\times CATE_{\text{227}}] + [\text{P}(\text{STAT227} = \text{No})\times CATE_{\text{no227}}]\\
-&= \frac{4}{8}(2) + \frac{4}{8}(-1.1667)\\
-&= 0.41665
+&= \frac{4}{8}(2) + \frac{4}{8}(-1.1667)= \boxed{0.41665}
 \normalsize
 \end{align*}
 
@@ -978,6 +952,40 @@ In this case, **potential outcomes** and **treatment assignment** are independen
 
 ---
 
+# Exchangeability
+
+.center[
+```{r, echo = FALSE, dpi = 250}
+knitr::include_graphics("exchangeable1.png")
+```
+]
+
+---
+
+# Exchangeability
+
+.center[
+```{r, echo = FALSE, dpi = 250}
+knitr::include_graphics("exchangeable2.png")
+```
+]
+
+--
+
+.display2[What this means] 👇
+
+- $E[Y(1)\mid T = 1] = E[Y(1)\mid T = 0] = E[Y(1)]$
+
+- $E[Y(0)\mid T = 0] = E[Y(0)\mid T = 1] = E[Y(0)]$
+
+.display1[What this means] 👇
+
+- Group A's **potential outcomes** for **T = 1** are *equal* to Group B's **potential outcomes** for **T = 1** (on average). 
+
+- Group B's **potential outcomes** for **T = 0** are *equal* to Group A's **potential outcomes** for **T = 0** (on average). 
+
+---
+
 # Conditional Exchangeability
 
 In many studies (e.g., .display1[observational studies]), **exchangeability** does not hold. 
@@ -1020,8 +1028,6 @@ Basically, .display1[consistency] means that we have:
 
 .display2[Is "STAT 228 (yes vs no)" a well-defined intervention?] 🤔
 
-- (*Probably*, but would need to be careful!)
-
 ---
 
 # Positivity
@@ -1053,24 +1059,6 @@ If you want to compare .display3[different treatment groups], then you need to h
 .display1[Positivity] could be violated if, *for example*, a group of patients cannot receive a particular treatment. 
 
 - This could happen if they were more susceptible to **side effects** of that treatment. 
-
----
-
-# SUTVA
-
-.display1[Stable Unit Treatment Value Assumption]<sup>[*]</sup>
-
-1. The potential outcomes for *any individual* do not vary with the treatments assigned to other individuals
-    - No **interference**
-    
-2. For each individual, there are no different forms or versions of each treatment level, which lead to different potential outcomes. 
-    - No **hidden treatment values**
-    
-.display2[In what situations could these assumptions be violated?]
-    
-.footnote[
-[*] Imbens and Rubin (2015). Causal Inference for Statistics, Social, and Biomedical Sciences. 
-]
 
 ---
 
