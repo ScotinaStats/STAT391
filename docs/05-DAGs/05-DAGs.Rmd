@@ -849,7 +849,8 @@ Controlling for a **mediator** results in .display3[overcontrol bias]!
 - A **mediator** is part of the *main causal pathway* of interest. 
 
 .pull-left[
-```{r, echo=FALSE, dpi = 300}
+```{r, echo=FALSE, fig.width=4.5, fig.height=3, dpi = 300}
+set.seed(1)
 edu_earn_coords = list(x = c(T = 1, Y = 3, FI = 2, AI = 2), 
                        y = c(T = 2, Y = 2, FI = 3, AI = 1))
 
