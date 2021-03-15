@@ -1,0 +1,1644 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>STAT 391: Applied Causal Inference</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Anthony Scotina" />
+    <script src="libs/header-attrs-2.6/header-attrs.js"></script>
+    <link href="libs/countdown-0.3.5/countdown.css" rel="stylesheet" />
+    <script src="libs/countdown-0.3.5/countdown.js"></script>
+    <script src="libs/kePrint-0.0.1/kePrint.js"></script>
+    <link href="libs/lightable-0.0.1/lightable.css" rel="stylesheet" />
+    <link rel="stylesheet" href="my-theme.css" type="text/css" />
+    <link rel="stylesheet" href="my-fonts.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# STAT 391: Applied Causal Inference
+## Propensity Score Matching/Weighting
+### Anthony Scotina
+
+---
+
+
+
+
+
+
+
+
+&lt;!--
+pagedown::chrome_print("~/Dropbox/Teaching/03-Simmons Courses/MATH228-Introduction to Data Science/Lecture Slides/01-Introduction/01-Introduction.html")
+--&gt;
+
+class: center, middle, frame
+
+# Logistic Regression Crash Course
+
+---
+
+# What is logistic regression?
+
+.display1[*Take yourself back to your first course on regression modeling.*]
+
+.center[
+🕔🚀🕢️
+]
+
+.display2[In the *shared Google doc*, jot down what you remember about logistic regression!]
+
+- .display3[Have you used it before?]
+
+- When is it used?
+
+- How does it differ from linear regression?
+
+- What was still confusing after your first exposure to logistic regression?
+
+<div class="countdown" id="timer_604e6f3c" style="right:0;bottom:0;" data-warnwhen="0">
+<code class="countdown-time"><span class="countdown-digits minutes">03</span><span class="countdown-digits colon">:</span><span class="countdown-digits seconds">00</span></code>
+</div>
+
+---
+
+# Needed Packages
+
+
+```r
+library(tidyverse)
+library(ISLR) # For 'Default' dataset
+library(broom) # For tidying model output
+library(rsample) # For data splitting
+library(yardstick) # For model performance metrics
+```
+
+
+```r
+Default %&gt;% 
+  sample_n(5)
+```
+
+```
+##   default student   balance   income
+## 1      No     Yes  564.7385 15411.19
+## 2      No      No  391.2566 33651.41
+## 3      No      No  829.3297 48734.17
+## 4      No      No 1187.4636 37092.59
+## 5      No      No 1234.5125 50293.43
+```
+
+&gt; .display1[Goal]: Model the **probability** of *defaulting* on credit card debt
+
+---
+
+# Why logistic regression?
+
+Suppose that we are trying to predict the medical condition of a patient admitted to the ER, based on their symptoms: `$$Y=\begin{cases}1,\ \text{if stroke};\\ 2,\ \text{if myocardial infarction};\\ 3,\ \text{epileptic seizure}\end{cases}$$`
+
+--
+
+.display2[Why linear regression won't work]
+
+Coding would imply...
+
+- an **ordering** on the outcomes (e.g., 3 is higher than 2)
+
+- difference between **stroke** and **myocardial infarction** is *equal* to the difference between **myocardial infarction** and **epileptic seizure**. 
+
+Plus, you can *change the code order* and get a completely different result!
+
+---
+
+# Why logistic regression?
+
+.pull-left[
+
+```r
+Default %&gt;%
+  mutate(prob = ifelse(default == "Yes", 1, 0)) %&gt;%
+  ggplot(aes(x = balance, y = prob)) + 
+  geom_point(alpha = 0.2) + 
+  geom_smooth(method = "lm") + 
+  labs(x = "Balance", 
+       y = "Probability of Default", 
+       title = "Linear Regression Fit") +
+  theme_minimal()
+```
+]
+
+.pull-right[
+![](08-Propensity_Scores_files/figure-html/unnamed-chunk-7-1.png)&lt;!-- --&gt;
+]
+
+&gt; What is the **predicted** probability of default for a person with a credit card balance of 0?
+
+---
+
+# Why logistic regression?
+
+.pull-left[
+
+```r
+Default %&gt;%
+  mutate(prob = ifelse(default == "Yes", 1, 0)) %&gt;%
+  ggplot(aes(x = balance, y = prob)) + 
+  geom_point(alpha = 0.2) + 
+  geom_smooth(method = "glm", 
+              method.args = list(family = binomial(link = "logit"))) + 
+  labs(x = "Balance", 
+       y = "Probability of Default", 
+       title = "Logistic Regression Fit") +
+  theme_minimal()
+```
+]
+
+.pull-right[
+![](08-Propensity_Scores_files/figure-html/unnamed-chunk-9-1.png)&lt;!-- --&gt;
+]
+
+&gt; What is the **predicted** probability of default for a person with a credit card balance of 0?
+
+---
+
+# What is logistic regression?
+
+The outcome variable in **logistic regression** must be *binary*. 
+
+- Similar to **linear regression**, the explanatary variables in the model help explain the variation in the **likelihood** of the *binary* outcome, *Y*. 
+
+--
+
+Except in **logistic regression**, we model `\(p = P(Y\mid X)\)` (probability of *Y*, *given* the explanatory variables) using a function that gives values *strictly* between 0 and 1 for all values of *X*: `$$p= \frac{e^{\beta_{0}+\beta_{1}X}}{1+e^{\beta_{0}+\beta_{1}X}}$$`
+
+--
+
+We can rearrange things into a more familiar format: `$$\log\left(\frac{p}{1-p}\right)=\beta_{0}+\beta_{1}X$$`
+
+- `\(\log\left(\frac{p}{1-p}\right)\)` is known as the **log odds**. 
+
+---
+
+# Data Splitting
+
+Okay, enough of the technical stuff, let's *fit* a **logistic regression** model!
+
+- Y = `default`
+- X = `balance`
+
+First, let's split our data intro a **training** (75%) and **testing** (25%) set, so we can see how well our model performs on data it hasn't seen before:
+
+
+```r
+set.seed(391) # CHANGE TO YOUR FAVORITE NUMBER!
+default_split = initial_split(Default, strata = default)
+
+default_train = training(default_split)
+default_test = testing(default_split)
+```
+
+- We'll fit/train our model on the **training data**, `default_train`. 
+
+---
+
+# Simple Logistic Regression
+
+Using the **training data**, we'll fit a logistic regression model in order to predict the *probability* of defaulting, based on each customer's average `balance`. 
+
+
+```r
+model_1 = glm(default ~ balance, family = "binomial", data = default_train)
+```
+
+- **Note**: We must use `family = "binomial"` in logistic regression, so R knows to fit a logistic regression model rather than some other type of **generalized linear model**. 
+
+--
+
+.pull-left[
+- The estimated coefficients from `model_1` correspond to this **probability curve** 👉
+]
+
+.pull-right[
+&lt;img src="08-Propensity_Scores_files/figure-html/unnamed-chunk-12-1.png" width="90%" /&gt;
+]
+
+---
+
+# Logistic Regression Output
+
+The coefficients from a **logistic regression** model are interpreted different than the ones from a *linear regression* model. 
+
+
+```r
+model_1 = glm(default ~ balance, family = "binomial", data = default_train)
+tidy(model_1)
+```
+
+```
+## # A tibble: 2 x 5
+##   term         estimate std.error statistic   p.value
+##   &lt;chr&gt;           &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;
+## 1 (Intercept) -10.5      0.412        -25.6 1.55e-144
+## 2 balance       0.00544  0.000252      21.5 6.35e-103
+```
+
+The coefficient for `balance`, `\(\hat{\beta}_{1}=0.00544\)`, represents the change in *log odds* as `balance` increases by one dollar. 
+
+&gt; What does this mean?!
+
+---
+
+# Odds Ratios
+
+Make it simpler by *unlogging* the coefficients and converting them to **odds ratios**:
+
+
+```r
+exp(coef(model_1))
+```
+
+```
+##  (Intercept)      balance 
+## 2.660117e-05 1.005452e+00
+```
+
+- Odds ratios are *centered at 1*; values *above* 1 mean that there's an **increase** in the likelihood of the outcome. 
+
+--
+
+The *odds ratio* for `balance`, 1.005452, is 0.005452 *above* 1. 
+
+- **What this means**: For every one dollar increase in credit card balance, a person is 0.5452% *more likely* to default on their debt. 
+
+--
+
+You can generate *odds ratios* automatically in `tidy()` by adding `exponentiate = TRUE`:
+
+
+```r
+tidy(model_1, exponentiate = TRUE)
+```
+
+```
+## # A tibble: 2 x 5
+##   term         estimate std.error statistic   p.value
+##   &lt;chr&gt;           &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;
+## 1 (Intercept) 0.0000266  0.412        -25.6 1.55e-144
+## 2 balance     1.01       0.000252      21.5 6.35e-103
+```
+
+---
+
+# Predicted Probabilities
+
+The **main reason** we are even covering *logistic regression* in STAT 391 is because we'll need the **predicted probabilities** from models like these very soon!
+
+Once we estimate the *coefficients*, we can compute the predicted *probability* of default for *any* credit card balance. 
+
+- Just plug them into this mess of an equation (using credit card balance of 1,000 dollars): `$$\hat{p}=\frac{e^{-10.5+0.00544\times 1000}}{1+e^{-10.5+0.00544\times 1000}}=0.00631$$`
+
+- A person with a credit card balance of 1,000 is **predicted** to have a default probability of 0.63%. 
+
+--
+
+Or, just use `predict()` (with `type = "response"`):
+
+
+```r
+predict(model_1, newdata = data.frame(balance = 1000), type = "response")
+```
+
+```
+##           1 
+## 0.006078495
+```
+
+---
+
+# Model Performance
+
+Remember the **testing set** we've been holding back this entire time?
+
+- Now it's time to use it to see how well our model performs!
+
+First, I'll create a *somewhat crude* `pred_class` variable, by classifying those with *predicted probabilities* &gt; 0.5 as having defaulted. 
+
+--
+
+
+```r
+default_test_pred = default_test %&gt;%
+  mutate(pred_prob = predict(model_1, newdata = default_test, type = "response"), 
+         pred_class = ifelse(pred_prob &gt; 0.5, "Yes", "No")) 
+```
+
+--
+
+Next, we'll obtain the model's **accuracy** by calculating the proportion of *true positives* and *true negatives*. 
+
+- Basically, this tells us how many *predicted classifications* (`pred_class`) match the observed (`default`). 
+
+--
+
+
+```r
+default_test_pred %&gt;% 
+  accuracy(truth = default, estimate = factor(pred_class)) 
+```
+
+```
+## # A tibble: 1 x 3
+##   .metric  .estimator .estimate
+##   &lt;chr&gt;    &lt;chr&gt;          &lt;dbl&gt;
+## 1 accuracy binary         0.973
+```
+
+---
+
+# Multiple Logistic Regression
+
+.display1[Now it's your turn!]
+
+In your **breakout rooms**, each person fit a *multiple logistic regression model* with the following:
+
+- *Y*: `default`
+- *X*&lt;sub&gt;1&lt;/sub&gt;: `balance`
+- *X*&lt;sub&gt;2&lt;/sub&gt;: `student`
+- *X*&lt;sub&gt;3&lt;/sub&gt;: `income`
+
+Before you **split your data**, run the following code to *downsample*:
+
+
+```r
+default_down = Default %&gt;%
+  group_by(default) %&gt;%
+  sample_n(300) %&gt;%
+  ungroup()
+
+# To get started...
+set.seed(391) # CHANGE THIS NUMBER!
+default_down_split = initial_split(default_down, strata = default)
+```
+
+Obtain your model's `accuracy`. Why do you think we *downsampled* the data?
+
+---
+
+# Looking Ahead
+
+There are other types of models for predicting a **binary** outcome. 
+
+- .display1[Classification and Regression Trees (CART)]
+- .display2[Random Forests]
+- .display3[Neural Networks]
+
+But **logistic regression** is probably the most common method. 
+
+--
+
+&lt;br&gt;&lt;/br&gt;
+
+We'll use this modeling technique to calculate **propensity scores**. 
+
+- The *probability* of receiving treatment, conditional on *X*: `\(P(T = 1\mid X)\)`
+
+- The **propensity score** will be used *extensively* in the **matching** and **weighting** methods coming up next!
+
+---
+
+class: center, middle, frame
+
+# Propensity Score Matching
+
+---
+
+# Recap
+
+We can use .display2[matching] algorithms to pair up **similar observations** and make the .display1[conditional exchangeability] assumption. 
+
+- .display1[conditional exchangeability] = .display3[no unmeasured confounding]!
+
+If two (or more) observations **in different treatment groups** are *pretty much* **identical** on a set of covariates, then we can say that the treatment assignment was essentially **random**. 
+
+
+
+--
+
+.pull-left[
+<style>html {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif;
+}
+
+#pwhgzwymks .gt_table {
+  display: table;
+  border-collapse: collapse;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333333;
+  font-size: 16px;
+  font-weight: normal;
+  font-style: normal;
+  background-color: #FFFFFF;
+  width: auto;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
+
+#pwhgzwymks .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#pwhgzwymks .gt_title {
+  color: #333333;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
+
+#pwhgzwymks .gt_subtitle {
+  color: #333333;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 0;
+  padding-bottom: 4px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
+
+#pwhgzwymks .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#pwhgzwymks .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#pwhgzwymks .gt_col_heading {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#pwhgzwymks .gt_column_spanner_outer {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#pwhgzwymks .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#pwhgzwymks .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#pwhgzwymks .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#pwhgzwymks .gt_group_heading {
+  padding: 8px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#pwhgzwymks .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#pwhgzwymks .gt_from_md > :first-child {
+  margin-top: 0;
+}
+
+#pwhgzwymks .gt_from_md > :last-child {
+  margin-bottom: 0;
+}
+
+#pwhgzwymks .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#pwhgzwymks .gt_stub {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 12px;
+}
+
+#pwhgzwymks .gt_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#pwhgzwymks .gt_first_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+}
+
+#pwhgzwymks .gt_grand_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#pwhgzwymks .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#pwhgzwymks .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#pwhgzwymks .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#pwhgzwymks .gt_footnotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#pwhgzwymks .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding: 4px;
+}
+
+#pwhgzwymks .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#pwhgzwymks .gt_sourcenote {
+  font-size: 90%;
+  padding: 4px;
+}
+
+#pwhgzwymks .gt_left {
+  text-align: left;
+}
+
+#pwhgzwymks .gt_center {
+  text-align: center;
+}
+
+#pwhgzwymks .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#pwhgzwymks .gt_font_normal {
+  font-weight: normal;
+}
+
+#pwhgzwymks .gt_font_bold {
+  font-weight: bold;
+}
+
+#pwhgzwymks .gt_font_italic {
+  font-style: italic;
+}
+
+#pwhgzwymks .gt_super {
+  font-size: 65%;
+}
+
+#pwhgzwymks .gt_footnote_marks {
+  font-style: italic;
+  font-size: 65%;
+}
+</style>
+<div id="pwhgzwymks" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;"><table class="gt_table">
+  
+  <thead class="gt_col_headings">
+    <tr>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">Person</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">Group</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">Age</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">Score</th>
+    </tr>
+  </thead>
+  <tbody class="gt_table_body">
+    <tr>
+      <td class="gt_row gt_center">11</td>
+      <td class="gt_row gt_center">Control</td>
+      <td class="gt_row gt_center">19</td>
+      <td class="gt_row gt_center">85</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">12</td>
+      <td class="gt_row gt_center">Control</td>
+      <td class="gt_row gt_center">22</td>
+      <td class="gt_row gt_center">82</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">13</td>
+      <td class="gt_row gt_center">Control</td>
+      <td class="gt_row gt_center">25</td>
+      <td class="gt_row gt_center">85</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">1</td>
+      <td class="gt_row gt_center">Treatment</td>
+      <td class="gt_row gt_center">19</td>
+      <td class="gt_row gt_center">84</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">2</td>
+      <td class="gt_row gt_center">Treatment</td>
+      <td class="gt_row gt_center">22</td>
+      <td class="gt_row gt_center">82</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">3</td>
+      <td class="gt_row gt_center">Treatment</td>
+      <td class="gt_row gt_center">21</td>
+      <td class="gt_row gt_center">85</td>
+    </tr>
+  </tbody>
+  
+  
+</table></div>
+]
+
+.pull-right[
+.display2[Some considerations]
+
+- How many matches *per observation*?
+
+- Matching *with* or *without* replacement?
+
+- **Distance measure** (exact, Mahalanobis distance, something else??)
+]
+
+---
+
+# Propensity Scores
+
+.pull-left[
+**Propensity score methods** were originally developed in the mid 1970s by Donald Rubin. 
+
+- Very popular in the **medical sciences**
+
+- One such method is .display2[propensity score matching]
+
+]
+
+.pull-right[
+
+&lt;img src="rubin.jpg" width="2000" /&gt;
+
+&gt; [**Donald Rubin**](https://statistics.fas.harvard.edu/people/donald-b-rubin)
+
+]
+
+.center[
+## What are propensity scores?
+]
+
+---
+
+# Propensity Scores
+
+&gt; For each individual `\(i\)`, the **propensity score** is the probability of receiving treatment, conditional on the confounding variables: `$$p(X_{i})=P(T_{i} = 1\mid X_{i})$$`
+
+We can estimate these from (for example) **logistic regression**:
+
+
+```r
+log_model = glm(treat ~ x1 + x2, family = "binomial", data = data)
+prop_scores = fitted(log_model)
+```
+
+--
+
+.display3[Key Assumptions]
+
+1. **Conditional Exchangeability**: `\([Y(0), Y(1)]\perp T\mid X\)` 👉 *No unmeasured confounding*
+
+2. **Common Support**: `\(0&lt;p(X_{i})&lt;1\)` 👉 For any probability, there must be units in both the treatment group and the control group. 
+
+---
+
+# Matching on the Propensity Score
+
+Instead of matching on **a bunch of covariates** at once... 
+
+- We could match on the **single** propensity score for each individual!
+
+&lt;br&gt;&lt;/br&gt;
+
+.center[
+&lt;img src="acnh_cov_matching.png" width="708" /&gt;
+]
+
+---
+
+# Matching on the Propensity Score
+
+Instead of matching on **a bunch of covariates** at once...
+
+- We could match on the **single** propensity score for each individual!
+
+&lt;br&gt;&lt;/br&gt;
+
+.center[
+&lt;img src="acnh_pscore_matching.png" width="708" /&gt;
+]
+
+---
+
+# Example: NSW Job Training Program
+
+The National Supported Work (NSW) Demonstration was a federally and privately funded randomized experiment done in the 1970s to estimate the effects of a job training program for disadvantaged workers.
+
+- Participants were randomly selected to participate in the training program. Both groups were followed up to determine the effect of the training on wages.
+
+🚨🚨 .display2[Difference in means]: &amp;#36;900 to &amp;#36;1800, depending on the sample used
+
+- (a **causal effect**, due to *randomization*)
+
+--
+
+&lt;br&gt;&lt;/br&gt;
+
+**Lalonde** ([1986](http://business.baylor.edu/scott_cunningham/teaching/lalonde-1986.pdf)) used *observational* control data and a variety of econometric models to investigate whether non-experimental methods would yield similar results to the **randomized experiment**. 
+
+🚨🚨 .display1[Difference in means]: Between &amp;#36;8,067 and &amp;#36;15,578, **but in the opposite direction**!
+
+- One reason? **Selection bias**, which violates the **exchangeability** assumption. 
+
+---
+
+# Example: NSW Job Training Program
+
+Dehejia and Wahba ([1999](https://www.uh.edu/~adkugler/Dehejia&amp;Wahba_JASA.pdf)) used **propensity score matching** to analyze the data. 
+
+- It turns out that the *observational* control group used by **Lalonde** ([1986](http://business.baylor.edu/scott_cunningham/teaching/lalonde-1986.pdf)) was *very dissimilar* to the *experimental* group that participated in the program. 
+
+--
+
+- By restricting the *observational* control group to those that were **similar** to the treated group, they could replicate the original NSW results.
+
+🚨🚨 .display3[Difference in means]: Between &amp;#36;1,473 and &amp;#36;1,691 (in the "correct" direction")
+
+---
+
+# Observational Data (a deeper look)
+
+Figure 5.12 from *Causal Inference: The Mixtape* 👇
+
+.center[
+&lt;img src="mixtape_5_12.png" width="448" /&gt;
+]
+
+**NSW Trainees** are...
+
+- More likely to be Black, Hispanic, younger, married, unemployed, etc.
+
+--
+
+The two groups are **not** .display2[exchangeable] on *observed covariates*!
+
+---
+
+# Propensity Score Matching (in R)
+
+.center[
+&lt;img src="matchit_hex.png" width="91" /&gt;
+]
+
+
+```r
+library(MatchIt)
+library(tidyverse)
+library(broom)
+
+# View(lalonde)
+# ?lalonde
+```
+
+---
+
+# Lalonde Exercise
+
+- .display1[Treatment variable]: `treat`
+
+- .display3[Outcome variable]: `re78` (income in 1978, in USD)
+
+**In your breakout rooms**, conduct an **exploratory analysis** and compare the two treatment groups (`treat = 1` and `treat = 0`). 
+
+How do these two groups compare on the following variables:
+
+- `age`
+- `race`
+- `re74`
+
+---
+
+# Estimating the Propensity Score
+
+.display2[Propensity Score]: `\(p(X_{i})=P(T_{i}=1\mid X_{i})\)`
+
+- .display1[In words]: The *probability* of joining the NSW training program, *conditional* on **observed** covariates (`race`, `age`, `re74`, etc.)
+
+
+```r
+pscore_model = glm(treat ~ age + educ + race + 
+                     married + nodegree + re74 + re75, 
+                   family = "binomial", 
+                   data = lalonde)
+lalonde$pscore = fitted(pscore_model)
+```
+
+--
+
+
+```r
+set.seed(228)
+lalonde %&gt;%
+  select(age, race, re74, treat, pscore) %&gt;%
+  sample_n(5)
+```
+
+```
+##         age   race       re74 treat     pscore
+## NSW61    17  black    0.00000     1 0.64626932
+## NSW180   29 hispan    0.00000     1 0.37897112
+## PSID111  51  white   48.98167     0 0.22407937
+## PSID62   22  white 5683.83300     0 0.04149409
+## PSID31   22 hispan 6404.84300     0 0.20761828
+```
+
+---
+
+# Common Support?
+
+
+```r
+ggplot(lalonde, aes(x = pscore, fill = factor(treat))) + 
+  geom_density(alpha = 0.3) + 
+  labs(x = "Propensity Score", fill = "Treatment Group") + 
+  theme_minimal()
+```
+
+&lt;img src="08-Propensity_Scores_files/figure-html/unnamed-chunk-31-1.png" width="60%" /&gt;
+
+---
+
+# Propensity Score Matching (in R)
+
+
+```r
+lalonde_pscore_match = matchit(treat ~ age + educ + race + 
+                                 married + nodegree + re74 + re75,
+                               data = lalonde, 
+                               method = "nearest", 
+*                              distance = "logit",
+                               replace = TRUE)
+
+lalonde_pscore_match
+```
+
+```
+## A matchit object
+##  - method: 1:1 nearest neighbor matching with replacement
+##  - distance: Propensity score
+##              - estimated with logistic regression
+##  - number of obs.: 614 (original), 265 (matched)
+##  - target estimand: ATT
+##  - covariates: age, educ, race, married, nodegree, re74, re75
+```
+
+
+```r
+summary(lalonde_pscore_match)
+```
+
+---
+
+# Matching Diagnostics
+
+All **185** *treated* participants were **matched** with .display2[similar] *untreated* participants. 
+
+- 🚨🚨 "Similar" is based on values of the **propensity** score!
+
+
+```r
+# Check individual matches
+lalonde_pscore_match$match.matrix
+
+# Check propensity scores
+lalonde_pscore_match$distance
+```
+
+--
+
+We matched .display1[with replacement], so an *untreated* participant could've been matched to **more than one** *treated* participant. 
+
+- **80** *untreated* participants were used as matches.
+
+- **349** *untreated* participants were *discarded*.
+
+---
+
+# Matching Diagnostics
+
+**Love Plot** 👇
+
+
+```r
+plot(summary(lalonde_pscore_match))
+```
+
+&lt;img src="08-Propensity_Scores_files/figure-html/unnamed-chunk-35-1.png" width="40%" /&gt;
+
+--
+
+- [Rubin, 2001](https://link.springer.com/article/10.1023/A:1020363010465) advised for *absolute standardized mean differences* of `\(&lt;0.25\)` for matching adjustment to be "trustworthy."
+
+---
+
+# Estimation
+
+First, generate the **matched dataset**:
+
+
+```r
+lalonde_matched = match.data(lalonde_pscore_match)
+```
+
+Second, fit a **regression model**. 
+
+- Use `weights = weights` to account for *multiply-matched* observations (i.e., prevent them from being overcounted). 
+
+
+```r
+lalonde_matched_reg = lm(re78 ~ treat, 
+                         weights = weights, 
+                         data = lalonde_matched)
+tidy(lalonde_matched_reg)
+```
+
+```
+## # A tibble: 2 x 5
+##   term        estimate std.error statistic     p.value
+##   &lt;chr&gt;          &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;       &lt;dbl&gt;
+## 1 (Intercept)    4381.      812.      5.40 0.000000150
+## 2 treat          1968.      971.      2.03 0.0438
+```
+
+--
+
+.display2[ATT] (Average Treatment Effect on Treated): &amp;#36;1,968
+
+- Among participants in the NSW program, the program *caused* a &amp;#36;1,968 increase in salary. 
+
+---
+
+# Practice
+
+Repeat the above example, but use .display2[covariate matching]. 
+
+- Set `distance = "mahalanobis"` in `matchit(...)`. 
+
+Does the ATT change? What does the **Love plot** suggest about the *covariate balance* after matching?
+
+![](08-Propensity_Scores_files/figure-html/unnamed-chunk-38-1.png)&lt;!-- --&gt;
+
+---
+
+# Some Technicalities
+
+.display3[Propensity Score Theorem]: If **common support** and **conditional exchangeability** hold, then `$$[Y(0), Y(1)]\perp T\mid p(X)$$`
+
+- Controlling for the **propensity score** (e.g., *matching* on it) is enough to have **exchangeability** between the *treatment* and the *potential outcomes*. 
+
+--
+
+This is **VERY helpful** for when there is a *large* number of covariates, because the propensity score is just a single number!
+
+.center[
+&lt;img src="acnh_pscore_matching.png" width="708" /&gt;
+]
+
+---
+
+# Some Technicalities
+
+.display3[Propensity Score Theorem]: If **common support** and **conditional exchangeability** hold, then `$$[Y(0), Y(1)]\perp T\mid p(X)$$`
+
+.display2[In DAG Form]
+
+&lt;img src="08-Propensity_Scores_files/figure-html/unnamed-chunk-40-1.png" width="50%" /&gt;
+
+---
+
+# Summary: Propensity Score Matching
+
+.display2[Propensity score matching] can be useful when you are otherwise matching on a *large* number of covariates. 
+
+- The **propensity score** is a single number, `\(P(T_{i}=1\mid X_{i})\)`. 
+
+- Can be estimated with .display3[logistic regression]
+
+--
+
+.display1[The general process]
+
+1. Estimate the **propensity score**, verify **common support** assumption. 
+
+2. Find matches for each **treated** individual.
+    - Consider matching *with replacement* to potentially reduce covariate bias.
+    - Could also find *more than one match* per treated individual (e.g., 2:1 matching)
+    
+3. Matching diagnostics: Compare means from `summary(...)`, generate **Love plot**
+
+4. Estimate the **ATT** (e.g., with *linear regression*)
+
+---
+
+class: center, middle, frame
+
+# Weighting on the Propensity Score
+
+---
+
+# Matching Limitations
+
+One possible downside to matching is that you usually have to *throw away* a large chunk of your data
+
+- Any controls who **are not matched** are *not included* in the final matched dataset!
+
+&lt;br&gt;&lt;/br&gt;
+
+
+```r
+lalonde_pscore_match = matchit(treat ~ age + educ + race + 
+                                 married + nodegree + re74 + re75,
+                               data = lalonde, 
+                               method = "nearest", 
+                               distance = "logit",
+                               replace = TRUE)
+
+lalonde_pscore_match
+```
+
+```
+## A matchit object
+##  - method: 1:1 nearest neighbor matching with replacement
+##  - distance: Propensity score
+##              - estimated with logistic regression
+##  - number of obs.: 614 (original), 265 (matched)
+##  - target estimand: ATT
+##  - covariates: age, educ, race, married, nodegree, re74, re75
+```
+
+---
+
+# Inverse Probability Weighting (IPW)
+
+We can use .display1[weighting] procedures to make some observations in the data "more important" than others. 
+
+- An *alternative* to matching is to .display1[weight] each observation by its .display2[inverse probability] of *receiving treatment*. 
+
+In other words, observations who are **predicted** to receive treatment but **do not** *actually* receive treatment (and vice-versa) will receive more weight. 
+
+---
+
+# Inverse Probability Weighting (IPW)
+
+.display3[IPW Procedure]
+
+1. Generate **propensity scores**
+
+2. Convert the propensity scores into **weights**: `$$w_{ATT_i}=\frac{p(X_{i})T_{i}}{p(X_{i})}+\frac{p(X_{i})(1-T_{i})}{1-p(X_{i})}$$`
+
+3. Fit a regression model including the weights (e.g., `weights = ipw_att` in `lm(...)`).
+
+--
+
+&lt;br&gt;&lt;/br&gt;
+
+**Note**: These weights are for estimating the .display2[ATT]. There are separate (yet, similar) weights for estimating the ATE or ATU, but we'll focus on the ATT here. 
+
+- For ATT weights, each observation in the *treated* group receives a weight of **1**. 
+
+- We take the *treated* sample as is, and try to weight the *control* sample to *match* it. 
+
+---
+
+# IPW (in R)
+
+**1.** Generate **propensity scores**
+
+
+```r
+pscore_model = glm(treat ~ age + educ + race + 
+                     married + nodegree + re74 + re75, 
+                   family = "binomial", 
+                   data = lalonde)
+lalonde$pscore = fitted(pscore_model)
+```
+
+**2.** Convert the propensity scores into **weights**
+
+
+```r
+lalonde = lalonde %&gt;%
+  mutate(ipw_att = (treat) + (pscore*(1 - treat)/(1 - pscore))) 
+
+lalonde %&gt;%
+  select(age, race, re74, treat, pscore, ipw_att) %&gt;%
+  head()
+```
+
+```
+##   age   race re74 treat    pscore ipw_att
+## 1  37  black    0     1 0.6387699       1
+## 2  22 hispan    0     1 0.2246342       1
+## 3  30  black    0     1 0.6782439       1
+## 4  27  black    0     1 0.7763241       1
+## 5  33  black    0     1 0.7016387       1
+## 6  22  black    0     1 0.6990699       1
+```
+
+
+
+```r
+lalonde = lalonde %&gt;%
+  mutate(ipw = (treat/pscore) + ((1 - treat)/(1 - pscore))) %&gt;%
+  group_by(treat) %&gt;%
+  summarize(mean_y_hat = mean(re78*ipw))
+
+lalonde %&gt;%
+  select(age, race, re74, treat, pscore, ipw) %&gt;%
+  head()
+
+lalonde %&gt;%
+  summarize(att_ipw = (1/sum(treat == 1))*sum(re78*((treat - pscore)/(1 - pscore))))
+
+lalonde %&gt;%
+  ggplot(aes(x = ipw, fill = factor(treat))) + 
+  geom_density(alpha = 0.3)
+
+# ATT weights
+lalonde = lalonde %&gt;%
+  mutate(ipw_att = (treat) + (pscore*(1 - treat)/(1 - pscore)), 
+         ipw = (treat/pscore) + ((1 - treat)/(1 - pscore)))
+
+lalonde %&gt;%
+  ggplot(aes(x = ipw_att, fill = factor(treat))) + 
+  geom_density(alpha = 0.3)
+
+lm(re78 ~ treat, data = lalonde_att, weights = ipw_att)
+
+lalonde %&gt;%
+  summarize(att_ipw = (1/sum(treat == 1))*sum(re78*((treat - pscore)/(1 - pscore))))
+```
+
+---
+
+# Detour: Visualizing the weights
+
+.display3[Before Weighting] 👇
+
+&lt;img src="08-Propensity_Scores_files/figure-html/unnamed-chunk-45-1.png" width="60%" /&gt;
+
+---
+
+# Detour: Visualizing the weights
+
+.display2[After Weighting] 👇
+
+&lt;img src="08-Propensity_Scores_files/figure-html/unnamed-chunk-46-1.png" width="60%" /&gt;
+
+---
+
+.display1[IPW Distribution] 👇
+
+
+```r
+ggplot(lalonde, aes(x = ipw_att, fill = factor(treat))) + 
+  geom_density(alpha = 0.3) + 
+  labs(x = "IPW Weights", fill = "Treatment Group") + 
+  theme_minimal()
+```
+
+&lt;img src="08-Propensity_Scores_files/figure-html/unnamed-chunk-47-1.png" width="50%" /&gt;
+
+
+---
+
+# IPW (in R)
+
+**3.** Fit a regression model including the weights
+
+
+```r
+lalonde_ipw = lm(re78 ~ treat, 
+                 weights = ipw_att, 
+                 data = lalonde)
+tidy(lalonde_ipw)
+```
+
+```
+## # A tibble: 2 x 5
+##   term        estimate std.error statistic  p.value
+##   &lt;chr&gt;          &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;    &lt;dbl&gt;
+## 1 (Intercept)    5135.      401.     12.8  2.10e-33
+## 2 treat          1214.      569.      2.13 3.32e- 2
+```
+
+--
+
+
+```r
+lalonde_ipw_adj = lm(re78 ~ treat + age + educ + race + 
+                   married + nodegree + re74 + re75, 
+                 weights = ipw_att, 
+                 data = lalonde)
+tidy(lalonde_ipw_adj)
+```
+
+---
+
+# Comparing Results
+
+The *estimated* .display2[ATT] is given in the `treat` row (**std error** in parentheses). 
+
+
+
+
+&lt;table class="table" style="width: auto !important; margin-left: auto; margin-right: auto;"&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style="text-align:left;"&gt;   &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; Naive &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; PSM w/out replacement &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; PSM w/ replacement &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; Covariate Matching &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; IPW &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; (Intercept) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 6984.170 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 5454.776 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 4381.204 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 5828.553 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 5135.072 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (360.710) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (516.396) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (811.618) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (734.922) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (401.194) &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; treat &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; -635.026 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 894.367 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 1967.940 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 520.590 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 1214.071 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;box-shadow: 0px 1px"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;box-shadow: 0px 1px"&gt; (657.137) &lt;/td&gt;
+   &lt;td style="text-align:center;box-shadow: 0px 1px"&gt; (730.295) &lt;/td&gt;
+   &lt;td style="text-align:center;box-shadow: 0px 1px"&gt; (971.379) &lt;/td&gt;
+   &lt;td style="text-align:center;box-shadow: 0px 1px"&gt; (913.773) &lt;/td&gt;
+   &lt;td style="text-align:center;box-shadow: 0px 1px"&gt; (568.904) &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; R2 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.002 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.004 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.015 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.001 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.007 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; R2 Adj. &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.000 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.001 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.012 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; -0.002 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.006 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; AIC &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 12698.7 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 7608.2 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 5489.6 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 5936.1 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 13241.9 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; BIC &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 12712.0 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 7620.0 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 5500.3 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 5947.1 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 13255.1 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Log.Lik. &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; -6346.371 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; -3801.114 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; -2741.783 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; -2965.062 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; -6617.942 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; F &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.934 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 1.500 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 4.104 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.325 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 4.554 &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+
+
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"countIncrementalSlides": false,
+"highlightLines": true
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
