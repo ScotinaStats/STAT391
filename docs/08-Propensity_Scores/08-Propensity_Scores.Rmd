@@ -469,10 +469,6 @@ knitr::include_graphics("rubin.jpg")
 
 ]
 
-.center[
-## What are propensity scores?
-]
-
 ---
 
 # Propensity Scores
