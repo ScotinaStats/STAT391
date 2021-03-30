@@ -526,7 +526,7 @@ knitr::include_graphics("acnh_pscore_matching.png")
 
 # Example: NSW Job Training Program
 
-The National Supported Work (NSW) Demonstration was a federally and privately funded randomized experiment done in the 1970s to estimate the effects of a job training program for disadvantaged workers.
+The **National Supported Work (NSW) Demonstration** was a federally and privately funded randomized experiment done in the 1970s to estimate the effects of a job training program for disadvantaged workers.
 
 - Participants were randomly selected to participate in the training program. Both groups were followed up to determine the effect of the training on wages.
 
@@ -535,8 +535,6 @@ The National Supported Work (NSW) Demonstration was a federally and privately fu
 - (a **causal effect**, due to *randomization*)
 
 --
-
-<br></br>
 
 **Lalonde** ([1986](http://business.baylor.edu/scott_cunningham/teaching/lalonde-1986.pdf)) used *observational* control data and a variety of econometric models to investigate whether non-experimental methods would yield similar results to the **randomized experiment**. 
 
@@ -909,7 +907,7 @@ lalonde %>%
 ```
 
 
-```{r, eval = FALSE}
+```{r, echo = FALSE, eval = FALSE}
 lalonde = lalonde %>%
   mutate(ipw = (treat/pscore) + ((1 - treat)/(1 - pscore))) %>%
   group_by(treat) %>%
