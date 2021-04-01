@@ -57,7 +57,7 @@ class: center, middle, frame
 
 - What was still confusing after your first exposure to logistic regression?
 
-<div class="countdown" id="timer_60627b17" style="right:0;bottom:0;" data-warnwhen="0">
+<div class="countdown" id="timer_6065d6ac" style="right:0;bottom:0;" data-warnwhen="0">
 <code class="countdown-time"><span class="countdown-digits minutes">03</span><span class="countdown-digits colon">:</span><span class="countdown-digits seconds">00</span></code>
 </div>
 
@@ -82,11 +82,11 @@ Default %&gt;%
 
 ```
 ##   default student   balance   income
-## 1      No      No  894.1145 47681.62
-## 2      No      No  561.9258 31388.51
-## 3      No      No  759.0904 41891.86
-## 4      No     Yes 1850.8882 21575.76
-## 5      No      No  331.9228 47779.93
+## 1      No      No 1218.2199 36290.16
+## 2      No      No  464.7627 17862.23
+## 3      No      No  983.4907 20828.53
+## 4      No     Yes 1947.0224 12147.05
+## 5      No     Yes  434.5603 14812.65
 ```
 
 &gt; .display1[Goal]: Model the **probability** of *defaulting* on credit card debt
@@ -1330,19 +1330,7 @@ lalonde %&gt;%
 
 &lt;img src="08-Propensity_Scores_files/figure-html/unnamed-chunk-46-1.png" width="60%" /&gt;
 
----
 
-.display1[IPW Distribution] 👇
-
-
-```r
-ggplot(lalonde, aes(x = ipw_att, fill = factor(treat))) + 
-  geom_density(alpha = 0.3) + 
-  labs(x = "IPW Weights", fill = "Treatment Group") + 
-  theme_minimal()
-```
-
-&lt;img src="08-Propensity_Scores_files/figure-html/unnamed-chunk-47-1.png" width="50%" /&gt;
 
 
 ---

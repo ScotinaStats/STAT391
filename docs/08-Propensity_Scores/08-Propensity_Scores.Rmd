@@ -981,11 +981,7 @@ ggplot() +
   theme_minimal()
 ```
 
----
-
-.display1[IPW Distribution] 👇
-
-```{r, dpi = 300, out.width = "50%"}
+```{r, dpi = 300, out.width = "50%", echo = FALSE, eval = FALSE}
 ggplot(lalonde, aes(x = ipw_att, fill = factor(treat))) + 
   geom_density(alpha = 0.3) + 
   labs(x = "IPW Weights", fill = "Treatment Group") + 
