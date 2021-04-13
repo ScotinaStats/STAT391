@@ -1,0 +1,688 @@
+---
+title: "STAT 391: Applied Causal Inference"
+subtitle: "Regression Discontinuity"
+author: "Anthony Scotina"
+date: 
+output:
+  xaringan::moon_reader:
+    lib_dir: libs
+    css: ["my-theme.css", "my-fonts.css"]
+    nature:
+      countIncrementalSlides: false
+      highlightLines: true
+---
+
+```{r xaringan-themer, include = FALSE}
+library(xaringanthemer)
+mono_accent(base_color = "#5E5E5E") #3E8A83?
+options(htmltools.preserve.raw = FALSE)
+```
+
+```{r, echo = FALSE}
+knitr::opts_chunk$set(
+  message = FALSE, warning = FALSE
+)
+```
+
+```{r, include = FALSE}
+library(tidyverse)
+library(broom)
+library(ggdag)
+library(kableExtra)
+library(rdrobust)
+library(countdown)
+```
+
+<!--
+pagedown::chrome_print("~/Dropbox/Teaching/03-Simmons Courses/MATH228-Introduction to Data Science/Lecture Slides/01-Introduction/01-Introduction.html")
+-->
+
+class: center, middle, frame
+
+# The Return of Arbitrary Cutoffs!
+
+---
+
+# Quasi-Experiments
+
+**Context** isolates the pathway between *treatment* and *outcome* in .display3[observational data]. 
+
+> Treatment assignment is **"as if" random**, though (e.g., through nature, government intervention, eligibility cutoff, etc.). 
+
+--
+
+.display2[Types of quasi-experimental designs]
+
+**1.** .display1[Difference-in-Differences]
+
+- **Treatment/Control** groups are compared *before/after* (i.e., .display1[over time]).
+
+--
+
+**2.** .display3[Regression Discontinuity]
+
+- Access to **treatment** is determined by .display3[arbitrary cutoffs/rules]. 
+
+- If you're above the threshold, you're in the treatment group!
+
+---
+
+# Piéchart University Statistics Requirement
+
+**Piéchart University**<sup>[*]</sup> requires all incoming students to demonstrate competency in statistics. 
+
+.display3[Two ways to demonstrate "competency"] 👇
+
+**1.** Pass an .display1[entrance exam] with a score *higher than 70%*. 
+
+**2.** Those who score *70 or lower* have to take a (**free**) .display2[Introductory Statistics] course in their first year. 
+
+> We want to see if this course actually "works." To do so, we'll have students take an "exit exam" at the end of the first year. 
+
+> **Is there a causal effect of taking Intro Stats on exit exam score**?
+
+.footnote[
+[*] the "t" is silent
+]
+
+---
+
+# The Target Trial
+
+.display1[First:]
+
+In your **breakout groups**, briefly discuss how you might check for a causal effect of `Intro Stats` on `Exit Exam Score` in a .display3[randomized trial]. 
+
+- Assume you have *unlimited funds and resources*.
+    - Remember, this is the **target** trial!
+
+```{r echo = FALSE}
+countdown(minutes = 3)
+```
+
+---
+
+# Piéchart University Statistics Requirement
+
+```{r, echo = FALSE}
+# Generate fake data
+set.seed(391)
+num_students <- 1000
+piechart_data <- tibble(
+  id = 1:num_students,
+  entrance_exam = rbeta(num_students, shape1 = 7, shape2 = 2),
+  exit_exam = rbeta(num_students, shape1 = 5, shape2 = 3)
+) %>% 
+  mutate(entrance_exam = entrance_exam * 100,
+         intro_stats = entrance_exam <= 70) %>% 
+  mutate(exit_exam = exit_exam * 40 + 10 * intro_stats + entrance_exam / 2) %>% 
+  mutate(intro_stats_fuzzy = ifelse(entrance_exam > 60 & entrance_exam < 80,
+                                    sample(c(TRUE, FALSE), n(), replace = TRUE),
+                                    intro_stats)) %>% 
+  mutate(intro_stats_text = factor(intro_stats, levels = c(FALSE, TRUE),
+                                   labels = c("No Intro Stats", "Intro Stats")),
+         intro_stats_fuzzy_text = factor(intro_stats_fuzzy, levels = c(FALSE, TRUE),
+                                      labels = c("No Intro Stats", "Intro Stats"))) %>% 
+  mutate(entrance_centered = entrance_exam - 70) %>%
+  select(id, entrance_exam, exit_exam, intro_stats_text, intro_stats_fuzzy_text, entrance_centered) %>%
+  rename(intro_stats = intro_stats_text, 
+         intro_stats_fuzzy = intro_stats_fuzzy_text)
+```
+
+```{r, echo=FALSE, fig.width=12, fig.height=6, dpi = 300}
+piechart_data %>%
+  ggplot(aes(x = entrance_exam, y = intro_stats, fill = intro_stats)) + 
+  geom_vline(xintercept = 70, size = 2) + 
+  geom_point(size = 5, pch = 21, color = "white", alpha = 0.7,
+             position = position_jitter(width = 0, height = 0.2, seed = 1234)) + 
+  labs(x = "Entrance Exam Score", y = NULL) + 
+  scale_fill_manual(values = c("#C4689B", "#4B81B3"), name = NULL) +
+  theme_bw(base_size = 28) + 
+  theme(legend.position = "none")
+```
+
+--
+
+.display2[Running Variable]: Variable that determines *eligibility* for intervention
+
+.display3[Cutoff]: Number that formally assigns access to intervention
+
+---
+
+# Piéchart University DAG
+
+.pull-left[
+```{r, echo = FALSE, fig.width=5, fig.height=5, out.width="100%", dpi = 300}
+piechart_dag1 = dagify(y ~ t + r, 
+                       t ~ r, 
+                       exposure = "t", 
+                       outcome = "y", 
+                       labels = c("t" = "Intro Stats", y = "Exit Exam", 
+                                  "r" = "Entrance Exam"), 
+                       coords = list(x = c(t = 1, y = 3, r = 2), 
+                                     y = c(t = 1, y = 1, r = 2))) %>%
+  tidy_dagitty() %>%
+  node_status()
+
+ggplot(piechart_dag1, aes(x = x, y = y, xend = xend, yend = yend)) + 
+  geom_dag_edges(start_cap = ggraph::circle(3, "lines"),
+                 end_cap = ggraph::circle(3, "lines"),
+                 edge_width = 1, 
+                 arrow_directed = grid::arrow(length = grid::unit(0.65, "lines"), type = "closed")) +
+  geom_dag_point(aes(color = status), size = 20) +
+  geom_dag_label_repel(aes(label = label, fill = status), seed = 391,
+                       color = "white", fontface = "bold", size = 5,
+                       label.padding = grid::unit(0.5, "lines"),
+                       box.padding = grid::unit(2, "lines"),
+                       direction = "z") +
+  guides(color = FALSE, fill = FALSE) + 
+  labs(title = "Data Generating Graph") +
+  theme_dag(base_size = 16)
+```
+]
+
+.pull-right[
+```{r, echo = FALSE, fig.width=5, fig.height=5, out.width="100%", dpi = 300}
+piechart_dag2 = dagify(y ~ t, 
+                       t ~ r, 
+                       exposure = "t", 
+                       outcome = "y", 
+                       labels = c("t" = "Intro Stats", y = "Exit Exam", 
+                                  "r" = "Entrance Exam -> Cutoff"), 
+                       coords = list(x = c(t = 1, y = 3, r = 2), 
+                                     y = c(t = 1, y = 1, r = 2))) %>%
+  tidy_dagitty() %>%
+  node_status()
+
+ggplot(piechart_dag2, aes(x = x, y = y, xend = xend, yend = yend)) + 
+  geom_dag_edges(start_cap = ggraph::circle(3, "lines"),
+                 end_cap = ggraph::circle(3, "lines"),
+                 edge_width = 1, 
+                 arrow_directed = grid::arrow(length = grid::unit(0.65, "lines"), type = "closed")) +
+  geom_dag_point(aes(color = status), size = 20) +
+  geom_dag_label_repel(aes(label = label, fill = status), seed = 391,
+                       color = "white", fontface = "bold", size = 5,
+                       label.padding = grid::unit(0.5, "lines"),
+                       box.padding = grid::unit(2, "lines"),
+                       direction = "z") +
+  guides(color = FALSE, fill = FALSE) + 
+  labs(title = "Limiting Graph") +
+  theme_dag(base_size = 16)
+```
+]
+
+---
+
+# Comparable Groups: Intuition
+
+How can we estimate **causal** effects by comparing the `Intro Stats` and `No Intro Stats` groups? 
+
+- Didn't they score *very differently* on the entrance exam? 🤔
+
+--
+
+The students **right before** and **right after** the 70% threshold are *essentially the same*!
+
+```{r, echo=FALSE, fig.width=12, fig.height=5, dpi = 300}
+piechart_data %>%
+  ggplot(aes(x = entrance_exam, y = intro_stats, fill = intro_stats)) + 
+  geom_vline(xintercept = 70, size = 2) + 
+  geom_point(size = 5, pch = 21, color = "white", alpha = 0.7,
+             position = position_jitter(width = 0, height = 0.2, seed = 1234)) + 
+  annotate(geom = "rect", fill = "grey50", alpha = 0.25, ymin = -Inf, ymax = Inf,
+           xmin = 70 - 5,  xmax = 70 + 5) +
+  annotate(geom = "rect", fill = "grey50", alpha = 0.5, ymin = -Inf, ymax = Inf,
+           xmin = 70 - 2,  xmax = 70 + 2) +
+  labs(x = "Entrance Exam Score", y = NULL) + 
+  scale_fill_manual(values = c("#C4689B", "#4B81B3"), name = NULL) +
+  theme_bw(base_size = 28) + 
+  theme(legend.position = "none")
+```
+
+---
+
+# Comparable Groups: Intuition
+
+How can we estimate **causal** effects by comparing the `Intro Stats` and `No Intro Stats` groups? 
+
+- Didn't they score *very differently* on the entrance exam? 🤔
+
+The students **right before** and **right after** the 70% threshold are *essentially the same*!
+
+```{r, echo=FALSE, fig.width=12, fig.height=5, dpi = 300}
+piechart_data %>%
+  ggplot(aes(x = entrance_exam, y = intro_stats, fill = intro_stats)) + 
+  geom_vline(xintercept = 70, size = 2) + 
+  geom_point(size = 5, pch = 21, color = "white", alpha = 0.7,
+             position = position_jitter(width = 0, height = 0.2, seed = 1234)) + 
+  annotate(geom = "rect", fill = "grey50", alpha = 0.25, ymin = -Inf, ymax = Inf,
+           xmin = 70 - 5,  xmax = 70 + 5) +
+  annotate(geom = "rect", fill = "grey50", alpha = 0.5, ymin = -Inf, ymax = Inf,
+           xmin = 70 - 2,  xmax = 70 + 2) +
+  labs(x = "Entrance Exam Score", y = NULL) + 
+  scale_fill_manual(values = c("#C4689B", "#4B81B3"), name = NULL) +
+  coord_cartesian(xlim = c(70 - 6, 70 + 6)) +
+  theme_bw(base_size = 28) + 
+  theme(legend.position = "none")
+```
+
+---
+
+# Comparable Groups: Intuition
+
+```{r, echo=FALSE, fig.width=12, fig.height=6, dpi = 300}
+piechart_data %>%
+  ggplot(aes(x = entrance_exam, y = intro_stats, fill = intro_stats)) + 
+  geom_vline(xintercept = 70, size = 2) + 
+  geom_point(size = 5, pch = 21, color = "white", alpha = 0.7,
+             position = position_jitter(width = 0, height = 0.2, seed = 1234)) + 
+  annotate(geom = "rect", fill = "grey50", alpha = 0.25, ymin = -Inf, ymax = Inf,
+           xmin = 70 - 5,  xmax = 70 + 5) +
+  annotate(geom = "rect", fill = "grey50", alpha = 0.5, ymin = -Inf, ymax = Inf,
+           xmin = 70 - 2,  xmax = 70 + 2) +
+  labs(x = "Entrance Exam Score", y = NULL) + 
+  scale_fill_manual(values = c("#C4689B", "#4B81B3"), name = NULL) +
+  coord_cartesian(xlim = c(70 - 6, 70 + 6)) +
+  theme_bw(base_size = 28) + 
+  theme(legend.position = "none")
+```
+
+- We have .display1[quasi-experimental] **treatment and control groups**!
+
+We can compare the **outcomes** (Exit Exam Score) for students right *before/after* the threshold!
+
+---
+
+# Regression Discontinuity Design
+
+```{r, echo=FALSE, fig.width=12, fig.height=6.5, dpi = 300}
+ggplot(piechart_data, aes(x = entrance_exam, y = exit_exam, fill = intro_stats)) +
+  geom_point(size = 4, pch = 21, color = "white", alpha = 1) + 
+  geom_vline(xintercept = 70, size = 2, color = "black") + 
+  labs(x = "Entrance Exam Score", y = "Exit Exam Score") + 
+  scale_fill_manual(values = c("#C4689B", "#4B81B3"), name = NULL) +
+  guides(fill = guide_legend(reverse = TRUE)) +
+  theme_bw(base_size = 20)
+```
+
+---
+
+# Regression Discontinuity Design
+
+```{r, echo=FALSE, fig.width=12, fig.height=6.5, dpi = 300}
+ggplot(piechart_data, aes(x = entrance_exam, y = exit_exam, fill = intro_stats)) +
+  geom_point(size = 4, pch = 21, color = "white", alpha = 0.2) + 
+  geom_vline(xintercept = 70, size = 2, color = "black") + 
+  geom_smooth(data = filter(piechart_data, entrance_exam <= 70), 
+              method = "lm", size = 2, show.legend = FALSE, color = "#4B81B3") + 
+  geom_smooth(data = filter(piechart_data, entrance_exam > 70), 
+              method = "lm", size = 2, show.legend = FALSE, color = "#C4689B") +
+  labs(x = "Entrance Exam Score", y = "Exit Exam Score") + 
+  scale_fill_manual(values = c("#C4689B", "#4B81B3"), name = NULL) +
+  guides(fill = guide_legend(reverse = TRUE, override.aes = list(alpha = 1)), color = FALSE) +
+  theme_bw(base_size = 20)
+```
+
+---
+
+class: center, middle, frame
+
+# Regression Discontinuity
+
+## The Details
+
+---
+
+# Goal of Regression Discontinuity
+
+Measure the **gap** in outcome for people on *both sides* of the **cutoff**. 
+
+```{r, echo=FALSE, fig.width=12, fig.height=6.5, dpi = 300}
+ggplot(piechart_data, aes(x = entrance_exam, y = exit_exam, fill = intro_stats)) +
+  geom_point(size = 4, pch = 21, color = "white", alpha = 0.2) + 
+  geom_vline(xintercept = 70, size = 2, color = "black") + 
+  geom_smooth(data = filter(piechart_data, entrance_exam <= 70), 
+              method = "lm", size = 2, show.legend = FALSE, color = "#4B81B3") + 
+  geom_smooth(data = filter(piechart_data, entrance_exam > 70), 
+              method = "lm", size = 2, show.legend = FALSE, color = "#C4689B") +
+  labs(x = "Entrance Exam Score", y = "Exit Exam Score") + 
+  scale_fill_manual(values = c("#C4689B", "#4B81B3"), name = NULL) +
+  guides(fill = guide_legend(reverse = TRUE, override.aes = list(alpha = 1)), color = FALSE) +
+  theme_bw(base_size = 20)
+```
+
+The **gap** is the .display2[local average treatment effect (LATE)]!
+
+---
+
+# LATE
+
+```{r, echo=FALSE, fig.width=12, fig.height=6.5, dpi = 300}
+rdd_intro_stats <- lm(exit_exam ~ entrance_centered + intro_stats, data = piechart_data)
+rdd_output = tidy(rdd_intro_stats)
+
+effect_control <- filter(rdd_output, term == "(Intercept)")$estimate
+late <- filter(rdd_output, term == "intro_statsIntro Stats")$estimate
+effect_treatment <- effect_control + late
+
+ggplot(piechart_data, aes(x = entrance_exam, y = exit_exam, fill = intro_stats, color = intro_stats)) +
+  geom_point(size = 4, pch = 21, color = "white", alpha = 0.2) + 
+  geom_vline(xintercept = 70, size = 2, color = "black") + 
+  geom_smooth(data = filter(piechart_data, entrance_exam <= 70), 
+              method = "lm", size = 2, show.legend = FALSE, color = "#4B81B3") + 
+  geom_smooth(data = filter(piechart_data, entrance_exam > 70), 
+              method = "lm", size = 2, show.legend = FALSE, color = "#C4689B") +
+  annotate(geom = "segment", x = 70, xend = 70, 
+           y = effect_control, yend = effect_treatment,
+           size = 2.5, color = "#C5E0F8") +
+  annotate(geom = "label", x = 77, y = effect_treatment - (late / 2),
+           label = "LATE", fontface = "bold",
+           color = "white", fill = "#C5E0F8", size = 7, label.padding = unit(0.75, "lines")) +
+  labs(x = "Entrance exam score", y = "Exit exam score") + 
+  scale_fill_manual(values = c("#C4689B", "#4B81B3"), name = NULL) +
+  scale_color_manual(values = c("#C4689B", "#4B81B3")) +
+  guides(fill = guide_legend(reverse = TRUE, override.aes = list(alpha = 1)), color = FALSE) +
+  theme_bw(base_size = 20)
+```
+
+---
+
+# What type of model?
+
+The size of the gap (i.e., the **LATE**) depends what types of models you use on each side of the cutoff. 
+
+- These considerations can have significant impact on the estimate of the **LATE**!
+
+.pull-left[
+.display2[Some considerations] 👇
+
+- Parametric models 
+    - e.g., **linear regression**
+
+- Non-parametric models
+
+- How do we measure the gap?
+
+- .display3[Bandwidths] 
+    - How many to include on either side of cutoff?
+]
+
+--
+
+.pull-right[
+```{r, echo = FALSE, out.width = "50%"}
+knitr::include_graphics("box.jpg")
+```
+
+*All models are wrong, but some are useful*. 
+- George Box, famous statistician
+]
+
+---
+
+# RDD with Parametric Models
+
+```{r, echo=FALSE, fig.width=12, fig.height=6.5, dpi = 300}
+ggplot(piechart_data, aes(x = entrance_exam, y = exit_exam, fill = intro_stats)) +
+  geom_point(size = 4, pch = 21, color = "white", alpha = 0.2) + 
+  geom_vline(xintercept = 70, size = 2, color = "black") + 
+  geom_smooth(data = filter(piechart_data, entrance_exam <= 70), 
+              method = "lm", size = 2, show.legend = FALSE, color = "#4B81B3") + 
+  geom_smooth(data = filter(piechart_data, entrance_exam > 70), 
+              method = "lm", size = 2, show.legend = FALSE, color = "#C4689B") +
+  labs(x = "Entrance Exam Score", y = "Exit Exam Score") + 
+  scale_fill_manual(values = c("#C4689B", "#4B81B3"), name = NULL) +
+  guides(fill = guide_legend(reverse = TRUE, override.aes = list(alpha = 1)), color = FALSE) +
+  theme_bw(base_size = 20)
+```
+
+.display1[How do we measure the gap?]
+
+- **Simplest way**: .display2[Re-center] the **running variable** around the **cutoff**. 
+    - Subtract the **cutoff** from each *observed* outcome
+
+---
+
+# Re-centering the Running Variable
+
+```{r, eval = FALSE}
+piechart_data  = piechart_data %>%
+  mutate(entrance_centered = entrance_exam - 70)
+```
+
+```{r, echo = FALSE}
+set.seed(391)
+piechart_data %>%
+  mutate(entrance_exam = round(entrance_exam, 0), 
+         exit_exam = round(exit_exam, 0), 
+         entrance_centered = round(entrance_centered)) %>%
+  select(id, entrance_exam, entrance_centered, intro_stats, exit_exam) %>%
+  sample_n(5) %>%
+  kbl()
+```
+
+$$\hat{y}=\beta_{0}+\beta_{1}\text{Running Variable (re-centered)} + \beta_{2}\text{Treatment}$$
+
+- **LATE** = $\beta_{2}$
+
+--
+
+.display1[In this example] 👇
+
+$$\widehat{Exit Exam}=\beta_{0}+\beta_{1}\text{Entrance Exam (re-centered)} + \beta_{2}\text{Intro Stats}$$
+
+- **LATE** = $\beta_{2}$
+
+---
+
+# RDD with Parametric Models
+
+```{r, echo=FALSE, fig.width=12, fig.height=4, dpi = 300}
+ggplot(piechart_data, aes(x = entrance_centered, y = exit_exam, fill = intro_stats)) +
+  geom_point(size = 4, pch = 21, color = "white", alpha = 0.2) + 
+  geom_smooth(data = filter(piechart_data, entrance_exam <= 70), 
+              method = "lm", size = 2, show.legend = FALSE, color = "#4B81B3") + 
+  geom_smooth(data = filter(piechart_data, entrance_exam > 70), 
+              method = "lm", size = 2, show.legend = FALSE, color = "#C4689B") +
+  labs(x = "Entrance Exam Score Above the Cutoff", y = "Exit Exam Score") + 
+  scale_fill_manual(values = c("#C4689B", "#4B81B3"), name = NULL) +
+  guides(fill = guide_legend(reverse = TRUE, override.aes = list(alpha = 1)), color = FALSE) +
+  theme_bw(base_size = 20)
+```
+
+.pull-left[
+```{r}
+rdd_model1 = 
+  lm(exit_exam ~ entrance_centered + 
+       intro_stats, 
+     data = piechart_data)
+```
+]
+
+.pull-right[
+```{r}
+tidy(rdd_model1)
+```
+
+- **LATE = 9.44**
+]
+
+---
+
+# Practice
+
+.center[
+## Do you think that LATE is a causal effect?
+]
+
+--
+
+.display2[In your breakout group]:
+
+Perform the same regression analysis, but look at a **smaller window of of observations**. 
+
+- In other words, restrict your analysis to *only* students with `entrance exam` scores within **a few points of the cutoff**. 
+    - ± 10 points? 
+    - ± 5 points?
+    
+- Use your assigned **bandwidth** to see how your **LATE** estimate compares to the one we found earlier!
+
+```{r, eval = FALSE}
+# Template
+rdd_model = lm(exit_exam ~ entrance_centered + intro_stats, 
+     data = filter(piechart_data, 
+                   entrance_centered >= -X &
+                     entrance centered <= X))
+```
+
+---
+
+# Bandwidths
+
+.display2[Bandwidth] = .display3[window around cutoff]
+
+```{r, echo=FALSE, fig.width=12, fig.height=5, dpi = 300}
+ggplot(piechart_data, aes(x = entrance_exam, y = exit_exam, fill = intro_stats, color = intro_stats)) +
+  geom_point(size = 4, pch = 21, color = "white", alpha = 0.2) + 
+  geom_vline(xintercept = 70, size = 2, color = "black") + 
+  geom_smooth(data = filter(piechart_data, entrance_exam <= 70), 
+              method = "lm", size = 2, show.legend = FALSE, color = "#4B81B3") + 
+  geom_smooth(data = filter(piechart_data, entrance_exam > 70), 
+              method = "lm", size = 2, show.legend = FALSE, color = "#C4689B") +
+  annotate(geom = "segment", x = 70, xend = 70, 
+           y = effect_control, yend = effect_treatment,
+           size = 2.5, color = "#C5E0F8") +
+  annotate(geom = "label", x = 80, y = effect_treatment - (late / 2),
+           label = "LATE = 9.44", fontface = "bold",
+           color = "white", fill = "#C5E0F8", size = 7, label.padding = unit(0.75, "lines")) +
+  labs(x = "Entrance exam score", y = "Exit exam score") + 
+  scale_fill_manual(values = c("#C4689B", "#4B81B3"), name = NULL) +
+  scale_color_manual(values = c("#C4689B", "#4B81B3")) +
+  guides(fill = guide_legend(reverse = TRUE, override.aes = list(alpha = 1)), color = FALSE) +
+  theme_bw(base_size = 20)
+```
+
+Our **LATE** of 9.44 *probably* wasn't a causal effect, and our model was *very* **wrong**!
+
+- All we really care about is **the area right around the cutoff**. 
+
+Observations far away from the cutoff are *not* .display1[comparable]! 
+
+---
+
+# Bandwidths
+
+```{r, echo=FALSE, fig.width=12, fig.height=4, dpi = 300}
+piechart_data %>%
+  mutate(bandwidth = (entrance_centered <= 5 &
+                        entrance_centered >= -5)) %>%
+  ggplot(aes(x = entrance_exam, y = exit_exam, fill = bandwidth)) +
+  geom_point(size = 4, pch = 21, color = "white", alpha = 0.7) + 
+  geom_vline(xintercept = 70, size = 2, color = "black") + 
+  labs(x = "Entrance Exam Score", y = "Exit Exam Score", 
+       title = "Bandwidth = 5") + 
+  scale_fill_manual(values = c("gray70", "#4B81B3"), name = NULL) +
+  guides(fill = guide_legend(reverse = TRUE, override.aes = list(alpha = 1)), color = FALSE) +
+  theme_bw(base_size = 20) + 
+  theme(legend.position = "none", 
+        plot.title = element_text(face = "bold"))
+
+piechart_data %>%
+  mutate(bandwidth = (entrance_centered <= 10 &
+                        entrance_centered >= -10)) %>%
+  ggplot(aes(x = entrance_exam, y = exit_exam, fill = bandwidth)) +
+  geom_point(size = 4, pch = 21, color = "white", alpha = 0.7) + 
+  geom_vline(xintercept = 70, size = 2, color = "black") + 
+  labs(x = "Entrance Exam Score", y = "Exit Exam Score", 
+       title = "Bandwidth = 10") + 
+  scale_fill_manual(values = c("gray70", "#C4689B"), name = NULL) +
+  guides(fill = guide_legend(reverse = TRUE, override.aes = list(alpha = 1)), color = FALSE) +
+  theme_bw(base_size = 20) + 
+  theme(legend.position = "none", 
+        plot.title = element_text(face = "bold"))
+```
+
+---
+
+# RDD with Non-parametric Models
+
+.display2[Non-parameteric] models do not have **parameters**!
+
+- By default, `geom_smooth()` uses **LOESS smoothing**. 
+    - **Lo**cally **e**stimated **s**catterplot **s**moothing
+
+```{r, echo=FALSE, fig.width=12, fig.height=4.5, dpi = 300}
+ggplot(piechart_data, aes(x = entrance_exam, y = exit_exam, fill = intro_stats)) +
+  geom_point(size = 4, pch = 21, color = "white", alpha = 0.2) + 
+  geom_smooth(data = filter(piechart_data, entrance_exam <= 70), 
+              size = 2, show.legend = FALSE, color = "#4B81B3") + 
+  geom_smooth(data = filter(piechart_data, entrance_exam > 70), 
+              size = 2, show.legend = FALSE, color = "#C4689B") +
+  labs(x = "Entrance Exam Score", y = "Exit Exam Score") + 
+  scale_fill_manual(values = c("#C4689B", "#4B81B3"), name = NULL) +
+  guides(fill = guide_legend(reverse = TRUE, override.aes = list(alpha = 1)), color = FALSE) +
+  theme_bw(base_size = 20)
+```
+
+**Note**: You can't use *linear regression* to find the **LATE**. 
+
+- Use the `rdrobust` package!
+
+---
+
+# `rdrobust`
+
+```{r, echo=FALSE, fig.width=12, fig.height=4.5, dpi = 300}
+ggplot(piechart_data, aes(x = entrance_exam, y = exit_exam, fill = intro_stats)) +
+  geom_point(size = 4, pch = 21, color = "white", alpha = 0.2) + 
+  geom_smooth(data = filter(piechart_data, entrance_exam <= 70), 
+              size = 2, show.legend = FALSE, color = "#4B81B3") + 
+  geom_smooth(data = filter(piechart_data, entrance_exam > 70), 
+              size = 2, show.legend = FALSE, color = "#C4689B") +
+  labs(x = "Entrance Exam Score", y = "Exit Exam Score") + 
+  scale_fill_manual(values = c("#C4689B", "#4B81B3"), name = NULL) +
+  guides(fill = guide_legend(reverse = TRUE, override.aes = list(alpha = 1)), color = FALSE) +
+  theme_bw(base_size = 20)
+```
+
+```{r, eval = FALSE}
+rdd_model_np = rdrobust(y = piechart_data$exit_exam, 
+                        x = piechart_data$entrance_exam, 
+                        c = 70)
+summary(rdd_model_np)
+```
+
+**LATE = 9.862** (the `rdrobust` package flipped the sign)
+- But don't forget **bandwidths**!
+
+---
+
+# Some cool `rdrobust` package functions
+
+- `rdrobust()`: builds the non-parameteric RDD model
+
+- `rdbwselect()`: runs an algorithm that selects the optimal *bandwidth*
+
+- `rdplot()`: creates a regression discontinuity plot
+
+---
+
+class: center, middle, frame
+
+# RDD Concerns
+
+---
+
+# RDD Concerns
+
+In your **breakout groups**, think about possible *concerns* or *limitations* of a causal analysis that uses **regression discontinuity**. 
+
+**Some ideas**:
+
+- .display1[Generalizability]
+    - What group(s) does the **LATE** actually apply to?
+
+- .display2[Manipulation]
+    - What if people know about the cutoff?
+    
+- .display3[Noncompliance]
