@@ -1,0 +1,845 @@
+---
+title: "STAT 391: Applied Causal Inference"
+subtitle: "Instrumental Variables (IVs)"
+author: "Anthony Scotina"
+date: 
+output:
+  xaringan::moon_reader:
+    lib_dir: libs
+    css: ["my-theme.css", "my-fonts.css"]
+    nature:
+      countIncrementalSlides: false
+      highlightLines: true
+---
+
+```{r xaringan-themer, include = FALSE}
+library(xaringanthemer)
+mono_accent(base_color = "#5E5E5E") #3E8A83?
+options(htmltools.preserve.raw = FALSE)
+```
+
+```{r, echo = FALSE}
+knitr::opts_chunk$set(
+  message = FALSE, warning = FALSE
+)
+```
+
+```{r, include = FALSE}
+library(tidyverse)
+library(broom)
+library(ggdag)
+library(AER)
+library(ivreg)
+```
+
+<!--
+pagedown::chrome_print("~/Dropbox/Teaching/03-Simmons Courses/MATH228-Introduction to Data Science/Lecture Slides/01-Introduction/01-Introduction.html")
+-->
+
+# Needed Packages
+
+```{r, warning = FALSE, message = FALSE}
+library(tidyverse)
+library(broom)
+library(AER) # Install this!
+library(ivreg) # Install this!
+
+data("CollegeDistance")
+```
+
+
+---
+
+class: center, middle, frame
+
+# No Unmeasured Confounding
+
+---
+
+# Conditional Exchangeability
+
+AKA .display2[no unmeasured confounding]: $$ \Large [Y(1), Y(0)] \perp T\mid X$$
+
+> Treatment assignment has **nothing to do** with potential benefits of the treatment, **within levels of the measured variables**.
+
+--
+
+We've learned how to *control* for **confounders** in **observational studies** or *quasi experiments* in various ways:
+
+- .display1[Matching Algorithms]
+
+- .display1[Difference-in-Differences]:
+    - Related to **parallel trends assumption**
+
+- .display1[Regression Discontinuity]
+
+--
+
+.center[
+
+.display3[But what if there *sare* unmeasured confounders?!]
+
+]
+
+---
+
+# Does education cause higher earnings?
+
+Central question of [Card (1993)](https://www.nber.org/papers/w4483). 
+
+.pull-left[
+```{r, echo=FALSE, fig.width=4.5, fig.height=4, dpi = 300}
+set.seed(228)
+dagify(y ~ x, 
+       outcome = "y", 
+       exposure = "x", 
+       labels = c("x" = "Education", "y" = "Earnings")) %>%
+  ggdag_status(use_labels = "label", text = FALSE) + 
+  theme_dag() + 
+  theme(legend.position = "none")
+```
+]
+
+--
+
+.pull-right[
+```{r}
+mod = lm(wage ~ education, 
+         data = CollegeDistance)
+tidy(mod)[,1:3]
+```
+
+- As education increases by one year, *hourly wage* increases by just under 2 cents. 
+]
+
+--
+
+.center[
+
+$\widehat{\text{Earnings}}=9.25+0.0179(\text{Education})$
+
+Is **0.0179** a *causal effect*?
+
+]
+
+---
+
+# NO!!!
+
+.pull-left[
+![](https://media.giphy.com/media/3o7btT1T9qpQZWhNlK/giphy.gif)
+
+![](https://media.giphy.com/media/JYZ397GsFrFtu/giphy.gif)
+]
+
+.pull-right[
+![](https://media.giphy.com/media/3og0IPCZ4Xjydp7sAw/giphy.gif)
+
+![](https://media.giphy.com/media/STfLOU6iRBRunMciZv/giphy.gif)
+]
+
+---
+
+# Omitted Variable Bias!
+
+.pull-left[
+```{r, echo=FALSE, fig.width=5, fig.height=5, dpi = 300}
+omitted_variable_dag = dagify(y ~ x + c + u,
+       x ~ c + u,
+       outcome = "y", 
+       exposure = "x", 
+       latent = "c",
+       labels = c("x" = "Education", "y" = "Earnings", 
+                  "c" = "Observed Stuff", "u" = "Ability?"), 
+       coords = list(x = c(x = 1, y = 3, c = 2, u = 2), 
+                     y = c(x = 1, y = 1, c = 2, u = 3))) %>%
+  tidy_dagitty() %>%
+  node_status()
+
+ggplot(omitted_variable_dag, aes(x = x, y = y, xend = xend, yend = yend)) + 
+  geom_dag_edges(start_cap = ggraph::circle(3, "lines"),
+                 end_cap = ggraph::circle(3, "lines"),
+                 edge_width = 1, 
+                 arrow_directed = grid::arrow(length = grid::unit(0.65, "lines"), type = "closed")) +
+  geom_dag_point(aes(color = status), size = 20) +
+  geom_dag_label_repel(aes(label = label, fill = status), seed = 391,
+                       color = "white", fontface = "bold", size = 5,
+                       label.padding = grid::unit(0.5, "lines"),
+                       box.padding = grid::unit(2, "lines"),
+                       direction = "z") +
+  guides(color = FALSE, fill = FALSE) + 
+  theme_dag(base_size = 16)
+```
+]
+
+.pull-right[
+**Observed Stuff**
+
+- gender, ethnicity, region, family income, county unemployment rate, etc.
+
+**Unobserved Stuff**
+
+- ability...
+]
+
+--
+
+Part of **Education** is *caused* by **Ability**, which is in the DAG. 
+
+- But we can't actually measure it!!! So how do we close the **backdoor**?!
+
+---
+
+class: center, middle, frame
+
+# Instruments
+
+---
+
+# Canonical IV DAG
+
+.center[
+### Use an instrument!
+]
+
+```{r, echo=FALSE, fig.width=12, fig.height=6, dpi = 300}
+iv_dag = dagify(Y ~ T + U,
+       T ~ U + Z,
+       outcome = "Y", 
+       exposure = "T", 
+       latent = "Z",
+       coords = list(x = c(T = 3, Y = 5, Z = 1, U = 4), 
+                     y = c(T = 1, Y = 1, Z = 1, U = 3))) %>%
+  tidy_dagitty() %>%
+  node_status()
+
+ggplot(iv_dag, aes(x = x, y = y, xend = xend, yend = yend)) + 
+  geom_dag_edges(start_cap = ggraph::circle(3, "lines"),
+                 end_cap = ggraph::circle(3, "lines"),
+                 edge_width = 1, 
+                 arrow_directed = grid::arrow(length = grid::unit(0.65, "lines"), type = "closed")) +
+  geom_dag_point(aes(color = status), size = 20) +
+  geom_dag_text(size = 10, aes(label = name)) +
+  guides(color = FALSE, fill = FALSE) + 
+  theme_dag(base_size = 16)
+```
+
+---
+
+# Canonical IV DAG
+
+.center[
+### Use an instrument!
+]
+
+```{r, echo=FALSE, fig.width=12, fig.height=6, dpi = 300}
+iv_dag = dagify(Y ~ T + U,
+       T ~ U + Z,
+       outcome = "Y", 
+       exposure = "T", 
+       latent = "Z",
+       labels = c("Y" = "Earnings", "T" = "Education", "U" = "Ability", "Z" = "Distance \n from college"),
+       coords = list(x = c(T = 3, Y = 5, Z = 1, U = 4), 
+                     y = c(T = 1, Y = 1, Z = 1, U = 3))) %>%
+  tidy_dagitty() %>%
+  node_status()
+
+ggplot(iv_dag, aes(x = x, y = y, xend = xend, yend = yend)) + 
+  geom_dag_edges(start_cap = ggraph::circle(3, "lines"),
+                 end_cap = ggraph::circle(3, "lines"),
+                 edge_width = 1, 
+                 arrow_directed = grid::arrow(length = grid::unit(0.65, "lines"), type = "closed")) +
+  geom_dag_point(aes(color = status), size = 20) +
+  geom_dag_label_repel(aes(label = label, fill = status), seed = 228,
+                       color = "white", fontface = "bold", size = 6,
+                       label.padding = grid::unit(0.75, "lines"),
+                       box.padding = grid::unit(6, "lines"),
+                       direction = "y")  +
+  guides(color = FALSE, fill = FALSE) + 
+  theme_dag(base_size = 16)
+```
+
+---
+
+# Three IV Conditions
+
+.pull-left[
+**1.** .display1[Relevance]
+
+- *Z* is **associated** with the *treatment*. 
+    - *Z* → *T*
+
+**2.** .display1[Exclusion]
+
+- *Z* is associated with the *outcome* **only through the treatment**. 
+    - *Z* → *T* → *Y*;  
+    - *Z* $\nrightarrow$ *Y*
+
+**3.** .display1[Marginal Exchangeability] 
+
+- *Z* is **not associated** with the *omitted variables*. 
+    - *U* $\nrightarrow$ *Y*
+
+]
+
+.pull-right[
+```{r, echo=FALSE, fig.width=4.5, fig.height=4, dpi = 300}
+iv_dag = dagify(Y ~ T + U,
+       T ~ U + Z,
+       outcome = "Y", 
+       exposure = "T", 
+       latent = "Z",
+       coords = list(x = c(T = 3, Y = 5, Z = 1, U = 4), 
+                     y = c(T = 1, Y = 1, Z = 1, U = 3))) %>%
+  tidy_dagitty() %>%
+  node_status()
+
+ggplot(iv_dag, aes(x = x, y = y, xend = xend, yend = yend)) + 
+  geom_dag_edges(start_cap = ggraph::circle(3, "lines"),
+                 end_cap = ggraph::circle(3, "lines"),
+                 edge_width = 1, 
+                 arrow_directed = grid::arrow(length = grid::unit(0.65, "lines"), type = "closed")) +
+  geom_dag_point(aes(color = status), size = 20) +
+  geom_dag_text(size = 10, aes(label = name)) +
+  guides(color = FALSE, fill = FALSE) + 
+  theme_dag(base_size = 16)
+```
+]
+
+---
+
+# Three IV Conditions
+
+.pull-left[
+**1.** .display1[Relevance] 
+
+- *Z* is **associated** with the *treatment*. 
+    - Testable with **statistics**
+    
+**2.** .display1[Exclusion]
+
+- *Z* is associated with the *outcome* **only through the treatment**. 
+    - Testable with **statistics** (plus some *storytelling*)
+
+**3.** .display1[Marginal Exchangeability] 
+
+- *Z* is **not associated** with the *omitted variables*. 
+    - **Requires** *storytelling* (no statistics...)
+
+]
+
+.pull-right[
+```{r, echo=FALSE, fig.width=4.5, fig.height=4, dpi = 300}
+iv_dag = dagify(Y ~ T + U,
+       T ~ U + Z,
+       outcome = "Y", 
+       exposure = "T", 
+       latent = "Z",
+       coords = list(x = c(T = 3, Y = 5, Z = 1, U = 4), 
+                     y = c(T = 1, Y = 1, Z = 1, U = 3))) %>%
+  tidy_dagitty() %>%
+  node_status()
+
+ggplot(iv_dag, aes(x = x, y = y, xend = xend, yend = yend)) + 
+  geom_dag_edges(start_cap = ggraph::circle(3, "lines"),
+                 end_cap = ggraph::circle(3, "lines"),
+                 edge_width = 1, 
+                 arrow_directed = grid::arrow(length = grid::unit(0.65, "lines"), type = "closed")) +
+  geom_dag_point(aes(color = status), size = 20) +
+  geom_dag_text(size = 10, aes(label = name)) +
+  guides(color = FALSE, fill = FALSE) + 
+  theme_dag(base_size = 16)
+```
+]
+
+---
+
+# IV Condition 1
+
+.center[
+## *Z* is **associated** with the *treatment* (education)
+
+### *Z* → *T*
+### Cor(Z, T) ≠ 0
+]
+
+.display3[Which pass IV Condition 1?]
+
+- .display2[Social security number]
+
+- .display2[Test scores from elementary school]
+
+- .display2[Distance from a 4-year college]
+
+- .display2[Parents' education level]
+
+---
+
+# IV Condition 2
+
+.center[
+## *Z* is associated with the *outcome* **only through the treatment** (education)
+
+### *Z* → *T* → *Y*;  *Z* $\nrightarrow$ *Y*
+]
+
+.display3[Which pass IV Condition 2?]
+
+- .display2[Social security number]
+
+- .display2[Test scores from elementary school]
+
+- .display2[Distance from a 4-year college]
+
+- .display2[Parents' education level]
+
+---
+
+# IV Condition 3
+
+.center[
+## *Z* is **not associated** with the *omitted variables*
+
+### *U* $\nrightarrow$ *Y*
+]
+
+.display3[Which pass IV Condition 3?]
+
+(Are these related to anything that is *also* related to **education**?)
+
+- .display2[Social security number]
+
+- .display2[Test scores from elementary school]
+
+- .display2[Distance from a 4-year college]
+
+- .display2[Parents' education level]
+
+---
+
+# Good instruments should feel weird!
+
+> How do you know when you have a good instrument? One, it will require prior knowledge. I’d encourage you to write down that prior knowledge into a DAG and use it to reflect on the feasibility of your design.
+
+> But, let’s say you think you do have a good instrument. How might you defend it as such to someone else? A necessary but not sufficient condition for having an instrument that can satisfy the exclusion restriction is if people are confused when you tell them about the instrument’s relationship to the outcome.
+
+- From *Causal Inference: The Mixtape*, [Chapter 7](https://mixtape.scunning.com/instrumental-variables.html#good-instruments-should-feel-weird)
+
+.display2[More examples of instruments]
+
+- *Access to treatment* 
+
+- *Physician's preference for one treatment over another*
+
+- ~~COVID-19~~
+
+---
+
+# The Exclusion Condition
+
+The IV Condition 2 (**exclusion**) is often the trickiest condition to prove. 
+
+- The instrument is associated with the *outcome* **only through the treatment**
+
+- .display3[Many proposed instruments fail this condition!]
+
+.pull-left[
+```{r, echo=FALSE, fig.width=4.5, fig.height=4, dpi = 300}
+iv_dag = dagify(Y ~ T + U,
+       T ~ U + Z,
+       outcome = "Y", 
+       exposure = "T", 
+       latent = "Z",
+       labels = c("Y" = "Outcome", "T" = "Treatment", "U" = "Unmeasured \n confounders", "Z" = "Instrument"),
+       coords = list(x = c(T = 3, Y = 5, Z = 1, U = 4), 
+                     y = c(T = 1, Y = 1, Z = 1, U = 3))) %>%
+  tidy_dagitty() %>%
+  node_status()
+
+ggplot(iv_dag, aes(x = x, y = y, xend = xend, yend = yend)) + 
+  geom_dag_edges(start_cap = ggraph::circle(3, "lines"),
+                 end_cap = ggraph::circle(3, "lines"),
+                 edge_width = 1, 
+                 arrow_directed = grid::arrow(length = grid::unit(0.65, "lines"), type = "closed")) +
+  geom_dag_point(aes(color = status), size = 20) +
+  geom_dag_label_repel(aes(label = label, fill = status), seed = 391,
+                       color = "white", fontface = "bold", size = 5,
+                       label.padding = grid::unit(0.5, "lines"),
+                       box.padding = grid::unit(2, "lines"),
+                       direction = "y")  +
+  guides(color = FALSE, fill = FALSE) + 
+  theme_dag(base_size = 16)
+```
+]
+
+.pull-right[
+**Distance to 4-year college** → ?? → **Earnings**
+
+**Cigarette sales tax** → ?? → **Health**
+
+**COVID-19** → ?? → **Grades/Earnings**
+]
+
+---
+
+class: center, middle, frame
+
+# Instruments in Action
+
+---
+
+# Does education cause higher earnings?
+
+$$\large \widehat{Earnings}_{i} = \beta_{0}+\beta_{1}\text{Education}_{i}+U_{i}$$
+
+- $U_{i}$ is the **unobserved** "error term" for person *i* 
+
+```{r}
+mod = lm(wage ~ education, 
+         data = CollegeDistance)
+tidy(mod)[,1:3]
+```
+
+As education increases by one year, *hourly wage* increases by just under 2 cents. 
+
+- This is **not** a causal effect!
+
+- We haven't accounted for *unobserved confounders* (e.g., **ability**)!
+
+---
+
+# IV Regression
+
+$$\large \widehat{Earnings}_{i} = \beta_{0}+\beta_{1}\text{Education}_{i}+U_{i}$$
+
+But what if we could split the *explanatory variable* (Education) into **two parts**?
+
+1. The part that is .display2[associated] (**endogenous**) with *U*
+
+2. The part that is .display3[not associated] (**exogenous**) with *U*
+
+--
+
+\begin{align*}
+\widehat{Earnings}_{i} &= \beta_{0}+\beta_{1}\text{Education}_{i}+U_{i}\\
+&= \beta_{0}+\beta_{1}(\text{Education}_{i}^{\text{exog.}} + \text{Education}_{i}^{\text{endog.}}) + U_{i}\\
+&= \beta_{0}+\beta_{1}\text{Education}_{i}^{\text{exog.}} + \underbrace{\beta_{1}\text{Education}_{i}^{\text{endog.}} + U_{i}}_{\omega_{i}}\\
+&= \beta_{0}+\beta_{1}\text{Education}_{i}^{\text{exog.}} + \omega_{i}
+\end{align*}
+
+---
+
+# Using Distance as an IV
+
+```{r, echo=FALSE, fig.width=12, fig.height=6, dpi = 300}
+iv_dag = dagify(Y ~ T + U,
+       T ~ U + Z,
+       outcome = "Y", 
+       exposure = "T", 
+       latent = "Z",
+       labels = c("Y" = "Earnings", "T" = "Education", "U" = "Ability", "Z" = "Distance \n from college"),
+       coords = list(x = c(T = 3, Y = 5, Z = 1, U = 4), 
+                     y = c(T = 1, Y = 1, Z = 1, U = 3))) %>%
+  tidy_dagitty() %>%
+  node_status()
+
+ggplot(iv_dag, aes(x = x, y = y, xend = xend, yend = yend)) + 
+  geom_dag_edges(start_cap = ggraph::circle(3, "lines"),
+                 end_cap = ggraph::circle(3, "lines"),
+                 edge_width = 1, 
+                 arrow_directed = grid::arrow(length = grid::unit(0.65, "lines"), type = "closed")) +
+  geom_dag_point(aes(color = status), size = 20) +
+  geom_dag_label_repel(aes(label = label, fill = status), seed = 228,
+                       color = "white", fontface = "bold", size = 6,
+                       label.padding = grid::unit(0.75, "lines"),
+                       box.padding = grid::unit(6, "lines"),
+                       direction = "y")  +
+  guides(color = FALSE, fill = FALSE) + 
+  theme_dag(base_size = 16)
+```
+
+Let's check the **conditions**!
+
+- .display1[Relevance], .display2[Exclusion], .display3[Marginal Exchangeability]
+
+---
+
+# Condition 1: Relevance
+
+.center[
+### *Distance* is **associated** with the *education*
+]
+
+.pull-left[
+```{r, echo = FALSE, fig.width=4, fig.height=4, dpi = 300}
+CollegeDistance %>%
+  ggplot(aes(x = distance, y = education)) + 
+  geom_jitter(alpha = 0.4) + 
+  #geom_smooth(method = "lm", se = FALSE) + 
+  labs(x = "Distance from 4-year college (in 10 miles)", 
+       y = "Years of education") + 
+  theme_bw(base_size = 12)
+```
+
+Not the *strongest* **linear** correlation...
+]
+
+.pull-right[
+```{r}
+first_stage = 
+  lm(education ~ distance, 
+     data = CollegeDistance)
+tidy(first_stage)[,1:3]
+```
+
+Clear, *statistically significant* effect. 
+
+- **Distance** appears to be *relevant*!
+]
+
+---
+
+# Condition 2: Exclusion
+
+.center[
+### *Distance* is associated with the *earnings* **only through education**
+]
+
+.pull-left[
+```{r, echo = FALSE, fig.width=4, fig.height=4, dpi = 300}
+CollegeDistance %>%
+  ggplot(aes(x = distance, y = wage)) + 
+  geom_jitter(alpha = 0.3) + 
+  geom_smooth(method = "lm", se = FALSE) + 
+  labs(x = "Distance from 4-year college (in 10 miles)", 
+       y = "Hourly wages") + 
+  theme_bw(base_size = 12)
+```
+
+*Very little* **direct** association between *distance* and *earnings*. 
+]
+
+.pull-right[
+```{r, echo=FALSE, fig.width=4.5, fig.height=4, dpi = 300}
+iv_dag = dagify(Y ~ T + U,
+       T ~ U + Z,
+       outcome = "Y", 
+       exposure = "T", 
+       latent = "Z",
+       labels = c("Y" = "Earnings", "T" = "Education", "U" = "Ability", "Z" = "Distance \n from college"),
+       coords = list(x = c(T = 3, Y = 5, Z = 1, U = 4), 
+                     y = c(T = 1, Y = 1, Z = 1, U = 3))) %>%
+  tidy_dagitty() %>%
+  node_status()
+
+ggplot(iv_dag, aes(x = x, y = y, xend = xend, yend = yend)) + 
+  geom_dag_edges(start_cap = ggraph::circle(3, "lines"),
+                 end_cap = ggraph::circle(3, "lines"),
+                 edge_width = 1, 
+                 arrow_directed = grid::arrow(length = grid::unit(0.65, "lines"), type = "closed")) +
+  geom_dag_point(aes(color = status), size = 20) +
+  geom_dag_label_repel(aes(label = label, fill = status), seed = 391,
+                       color = "white", fontface = "bold", size = 4,
+                       label.padding = grid::unit(0.5, "lines"),
+                       box.padding = grid::unit(1.5, "lines"),
+                       direction = "z")  +
+  guides(color = FALSE, fill = FALSE) + 
+  theme_dag(base_size = 16)
+```
+
+Are there any other *plausible* paths between *distance* and *earnings*?
+]
+
+---
+
+# Condition 3: Marginal Exchangeability
+
+.center[
+### *Distance* is **not associated** with the *omitted variables*
+]
+
+.pull-left[
+```{r, echo=FALSE, fig.width=4.5, fig.height=4, dpi = 300}
+iv_dag = dagify(Y ~ T + U,
+       T ~ U + Z,
+       outcome = "Y", 
+       exposure = "T", 
+       latent = "Z",
+       labels = c("Y" = "Earnings", "T" = "Education", "U" = "Ability", "Z" = "Distance \n from college"),
+       coords = list(x = c(T = 3, Y = 5, Z = 1, U = 4), 
+                     y = c(T = 1, Y = 1, Z = 1, U = 3))) %>%
+  tidy_dagitty() %>%
+  node_status()
+
+ggplot(iv_dag, aes(x = x, y = y, xend = xend, yend = yend)) + 
+  geom_dag_edges(start_cap = ggraph::circle(3, "lines"),
+                 end_cap = ggraph::circle(3, "lines"),
+                 edge_width = 1, 
+                 arrow_directed = grid::arrow(length = grid::unit(0.65, "lines"), type = "closed")) +
+  geom_dag_point(aes(color = status), size = 20) +
+  geom_dag_label_repel(aes(label = label, fill = status), seed = 391,
+                       color = "white", fontface = "bold", size = 4,
+                       label.padding = grid::unit(0.5, "lines"),
+                       box.padding = grid::unit(1.5, "lines"),
+                       direction = "z")  +
+  guides(color = FALSE, fill = FALSE) + 
+  theme_dag(base_size = 16)
+```
+]
+
+.pull-left[
+Is the **distance from a 4-year college** associated with any unobserved stuff *that is also associated with education* (e.g., ability)?
+
+- Probably not...
+
+- We'll assume that distance from a 4-year college is essentially **random**. 
+]
+
+---
+
+# Two-stage least squares (2SLS)
+
+.display2[The goal...] 
+
+- Using the **instrument**, find the (*exogenous*) part of the treatment variable that is *not* associated with unobserved confounders. 
+
+- Use *that* to predict the **outcome**. 
+
+.pull-left[
+
+.center[.display3[First Stage]]
+
+$$\widehat{\text{Education}}_{i} = \alpha_{0}+\alpha_{1}\text{Distance}_{i}$$
+
+- $\widehat{Education}$ is the *exogenous* part of education based on the *distance* IV. 
+]
+
+--
+
+.pull-right[
+
+.center[.display3[Second Stage]]
+
+$$\widehat{Earnings}_{i} = \beta_{0}+\beta_{1}\widehat{\text{Education}}_{i}$$
+
+- $\beta_{1}$ is the **causal effect** of *education* on *earnings*. 
+]
+
+---
+
+# Two-stage least squares (2SLS)
+
+.display3[First Stage]
+
+```{r}
+first_stage = lm(education ~ distance, data = CollegeDistance)
+tidy(first_stage)
+```
+
+$$\widehat{\text{Education}}_{i} = 13.9-0.0726\times\text{Distance}_{i}$$
+
+Let's add the predicted (fitted) values for *education* to the `CollegeDistance` data:
+
+```{r}
+CollegeDistance = CollegeDistance %>%
+  mutate(education_pred = fitted(first_stage))
+```
+
+---
+
+# Two-stage least squares (2SLS)
+
+.display3[Second Stage]
+
+```{r}
+second_stage = lm(wage ~ education_pred, data = CollegeDistance)
+tidy(second_stage)
+```
+
+Education **causes** hourly wages to increase by 0.00144 dollars. 😐😐😐
+
+- We didn't control for any **observed** confounders though!
+
+- Some options: gender, ethnicity, whether the school is in an urban area, county unemployment rate
+
+---
+
+# IV Dag
+
+```{r, echo=FALSE, fig.width=12, fig.height=6, dpi = 300}
+iv_dag = dagify(Y ~ T + U + O,
+       T ~ U + Z + O,
+       outcome = "Y", 
+       exposure = "T", 
+       latent = "Z",
+       labels = c("Y" = "Earnings", "T" = "Education", "U" = "Unobserved", "Z" = "Distance \n from college", 
+                  "O" = "Observed"),
+       coords = list(x = c(T = 3, Y = 5, Z = 1, U = 4, O = 4), 
+                     y = c(T = 1, Y = 1, Z = 1, U = 4, O = 3))) %>%
+  tidy_dagitty() %>%
+  node_status()
+
+ggplot(iv_dag, aes(x = x, y = y, xend = xend, yend = yend)) + 
+  geom_dag_edges(start_cap = ggraph::circle(3, "lines"),
+                 end_cap = ggraph::circle(3, "lines"),
+                 edge_width = 1, 
+                 arrow_directed = grid::arrow(length = grid::unit(0.65, "lines"), type = "closed")) +
+  geom_dag_point(aes(color = status), size = 20) +
+  geom_dag_label_repel(aes(label = label, fill = status), seed = 228,
+                       color = "white", fontface = "bold", size = 6,
+                       label.padding = grid::unit(0.75, "lines"),
+                       box.padding = grid::unit(6, "lines"),
+                       direction = "y")  +
+  guides(color = FALSE, fill = FALSE) + 
+  theme_dag(base_size = 16)
+```
+
+---
+
+# `ivreg()`
+
+The `ivreg` package provides a faster, more accurate way to run 2SLS!
+
+- `ivreg(outcome ~ second stage stuff | first stage stuff)`
+
+- Include any **observed confounders** in *both* stages!
+
+```{r}
+model_ivreg = ivreg(wage ~ gender + ethnicity + urban + unemp + education | 
+                      gender + ethnicity + urban + unemp + distance, 
+                    data = CollegeDistance)
+tidy(model_ivreg)
+```
+
+- Education **causes** hourly wages to increase by 0.0673 dollars.
+
+---
+
+# Summary
+
+An analysis that uses **instrumental variables** should follow these steps:
+
+.display2[Check Conditions]
+
+**1.** Is the instrument **relevant**?
+
+- Check whether the instrument is *associated* with the *treatment* variable. 
+
+**2.** Does the instrument meet the **exclusion** condition?
+
+- Instrument is associated with the outcome **only through treatment** 
+- This is tricky to prove!
+
+**3.** Is the instrument *marginally exchangeable*?
+
+- Make sure no arrows in your DAG point *into* the instrument. 
+- Prove with **storytelling**; no stats
+
+--
+
+.display3[Modeling]
+
+**4.** **2-stage least squares** (2SLS)
+
+- Use `ivreg()` to save some time
+
