@@ -97,7 +97,7 @@ In your **breakout groups**, briefly discuss how you might check for a causal ef
     - Remember, this is the **target** trial!
 
 ```{r echo = FALSE}
-countdown(minutes = 3)
+countdown(minutes = 2)
 ```
 
 ---
