@@ -104,7 +104,7 @@ countdown(minutes = 2)
 
 # Piéchart University Statistics Requirement
 
-```{r, echo = FALSE}
+```{r, echo = FALSE} 
 # Generate fake data
 set.seed(391)
 num_students <- 1000
@@ -235,33 +235,6 @@ piechart_data %>%
            xmin = 70 - 2,  xmax = 70 + 2) +
   labs(x = "Entrance Exam Score", y = NULL) + 
   scale_fill_manual(values = c("#C4689B", "#4B81B3"), name = NULL) +
-  theme_bw(base_size = 28) + 
-  theme(legend.position = "none")
-```
-
----
-
-# Comparable Groups: Intuition
-
-How can we estimate **causal** effects by comparing the `Intro Stats` and `No Intro Stats` groups? 
-
-- Didn't they score *very differently* on the entrance exam? 🤔
-
-The students **right before** and **right after** the 70% threshold are *essentially the same*!
-
-```{r, echo=FALSE, fig.width=12, fig.height=5, dpi = 300}
-piechart_data %>%
-  ggplot(aes(x = entrance_exam, y = intro_stats, fill = intro_stats)) + 
-  geom_vline(xintercept = 70, size = 2) + 
-  geom_point(size = 5, pch = 21, color = "white", alpha = 0.7,
-             position = position_jitter(width = 0, height = 0.2, seed = 1234)) + 
-  annotate(geom = "rect", fill = "grey50", alpha = 0.25, ymin = -Inf, ymax = Inf,
-           xmin = 70 - 5,  xmax = 70 + 5) +
-  annotate(geom = "rect", fill = "grey50", alpha = 0.5, ymin = -Inf, ymax = Inf,
-           xmin = 70 - 2,  xmax = 70 + 2) +
-  labs(x = "Entrance Exam Score", y = NULL) + 
-  scale_fill_manual(values = c("#C4689B", "#4B81B3"), name = NULL) +
-  coord_cartesian(xlim = c(70 - 6, 70 + 6)) +
   theme_bw(base_size = 28) + 
   theme(legend.position = "none")
 ```
